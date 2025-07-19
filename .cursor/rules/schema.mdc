@@ -1,0 +1,131 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+// Define the datasource for PostgreSQL
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define the events model
+model Event {
+  event_id    Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  start_date  DateTime? @db.Date
+  end_date    DateTime? @db.Date
+  description String?   @db.Text
+  created_at  DateTime  @default(now())
+  event_users EventUser[]
+  flets       Flet[]
+  hotels      Hotel[]
+  destinations Destination[]
+  flight_schedules FlightSchedule[]
+  transport_reports TransportReport[]
+  realtime_statuses RealTimeStatus[]
+}
+
+// Define the users model
+model User {
+  user_id      Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(100)
+  password_hash String   @db.VarChar(255)
+  role         String?   @db.VarChar(50)
+  created_at   DateTime  @default(now())
+  event_users  EventUser[]
+  transport_reports TransportReport[]
+}
+
+// Define the event_users model (many-to-many relationship)
+model EventUser {
+  event_id  Int
+  user_id   Int
+  event     Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  user      User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  @@id([event_id, user_id])
+  @@index([event_id])
+  @@index([user_id])
+}
+
+// Define the flet model (transport markers)
+model Flet {
+  flet_id     Int      @id @default(autoincrement())
+  event_id    Int
+  event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+  @@index([event_id])
+}
+
+// Define the hotel model
+model Hotel {
+  hotel_id    Int      @id @default(autoincrement())
+  event_id    Int
+  event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+  @@index([event_id])
+}
+
+// Define the destination model
+model Destination {
+  destination_id Int      @id @default(autoincrement())
+  event_id       Int
+  event          Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  name           String   @db.VarChar(255)
+  description    String?  @db.Text
+  created_at     DateTime @default(now())
+  @@index([event_id])
+}
+
+// Define the flight_schedule model
+model FlightSchedule {
+  flight_id                   Int      @id @default(autoincrement())
+  event_id                    Int
+  event                       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  first_name                  String   @db.VarChar(255)
+  last_name                   String   @db.VarChar(255)
+  flight_number               String   @db.VarChar(50)
+  arrival_time                DateTime
+  property_name               String   @db.VarChar(255)
+  vehicle_standby_arrival_time DateTime @db.Time
+  departure_time              DateTime
+  vehicle_standby_departure_time DateTime @db.Time
+  status                      String   @default("pending") @db.VarChar(50)
+  created_at                  DateTime @default(now())
+  @@index([event_id])
+  @@index([status])
+}
+
+// Define the transport_report model
+model TransportReport {
+  report_id    Int      @id @default(autoincrement())
+  event_id     Int
+  event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  user_id      Int
+  user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  question     String   @db.Text
+  answer       String   @db.Text
+  status       String   @default("pending") @db.VarChar(50)
+  submitted_at DateTime @default(now())
+  @@index([event_id])
+  @@index([user_id])
+}
+
+// Define the realtime_status model
+model RealTimeStatus {
+  status_id    Int      @id @default(autoincrement())
+  event_id     Int
+  event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  vehicle_code String   @db.VarChar(50)
+  hotel_name   String   @db.VarChar(255)
+  destination  String   @db.VarChar(255)
+  guest_name   String?  @db.VarChar(255)
+  status       String   @default("pending") @db.VarChar(50)
+  updated_at   DateTime @default(now())
+  @@index([event_id])
+  @@index([status])
+}

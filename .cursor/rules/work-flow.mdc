@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Overview
+
+The Transport Management Program organizes transportation logistics for events. After successful user authentication, the main page displays a list of existing events and a button to create a new event. Creating an event involves a multi-step modal window where users input event details, fleet markers, hotel names, and destinations. After creating an event, users can select an event from the list to access a dashboard page specific to that event, which provides links to manage the event’s components: Flight Schedule, Transport Report, and RealTimeStatus. All data is stored in a PostgreSQL database, linked by event_id.
+Main Page
+
+    Display:
+        A list of event names (name from the events table) fetched from the database.
+        A button labeled "Create New Event" that opens a modal for event creation.
+    Functionality:
+        Clicking an event name redirects to the event’s dashboard page (e.g., /dashboard/:eventId).
+        Authentication is assumed to be handled (e.g., via JWT or session); users see only events they’re associated with (via event_users).
+
+Event Creation Modal
+
+A multi-step wizard in a modal window collects:
+
+    Step 1: Event Details
+        Fields:
+            Name: Text input (required, e.g., "Conference 2025").
+            Start Date: Date input (required, e.g., 20-7-2025).
+            End Date: Date input (required, e.g., 30-7-2025).
+            Description: Textarea (optional).
+        Button: "Next" to proceed.
+    Step 2: Fleet Markers
+        Field: Text input for fleet markers (e.g., Car-001, Bus-ABC).
+        Functionality: Users can add unlimited markers by clicking "Add" or pressing Enter, with the list displayed dynamically.
+        Button: "Next" to proceed.
+    Step 3: Hotel Names
+        Field: Text input for hotel names (e.g., Hilton Hotel, Marriott Hotel).
+        Functionality: Users can add unlimited hotel names similarly.
+        Button: "Next" to proceed.
+    Step 4: Destinations
+        Field: Text input for destinations (e.g., Conference Center, Airport).
+        Functionality: Users can add unlimited destinations similarly.
+        Button: "Create" to finalize, log data to console.log, save to the database, and close the modal.
+
+Dashboard Page
+
+    Display:
+        Event name and details (e.g., Conference 2025, 20-7-2025 to 30-7-2025).
+        Links/buttons to manage:
+            Flight Schedule: Upload and manage flight data from Excel files.
+            Transport Report: Submit and view worker reports.
+            RealTimeStatus: Manage dynamic transport data (vehicle codes, hotels, destinations, guests).
+    Functionality:
+        All data displayed is filtered by the selected event_id.
+        Links navigate to respective module pages or trigger actions (e.g., file upload for Flight Schedule).
+
+Data Flow
+
+    After authentication, users see the main page with events they’re authorized to access (via event_users).
+    Creating an event via the modal populates events, flet, hotel, and destination tables.
+    Selecting an event redirects to /dashboard/:eventId, where users access module-specific functionality.
+    Flight Schedule data is uploaded via Excel and stored in flight_schedule.
+    Transport Report and RealTimeStatus data are managed via forms or interfaces in their respective modules.

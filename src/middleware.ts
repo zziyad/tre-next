@@ -1,0 +1,44 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+// Add any paths that should be accessible without authentication
+const publicPaths = ['/', '/login', '/register', '/api/auth/login', '/api/auth/register'];
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow access to public paths
+  if (publicPaths.includes(pathname)) {
+    // If user is already logged in and tries to access login/register pages,
+    // redirect them to dashboard
+    const sessionToken = request.cookies.get('session_token');
+    if (sessionToken && (pathname === '/login' || pathname === '/register' || pathname === '/')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Check for session token
+  const sessionToken = request.cookies.get('session_token');
+
+  // If no session token is present, redirect to login
+  if (!sessionToken) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
+}; 
