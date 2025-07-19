@@ -276,13 +276,13 @@ export default function EventDashboardPage() {
   }, [eventId]);
 
   const sidebarItems = [
-    { icon: BarChart3, label: 'Dashboard', active: true },
-    { icon: Calendar, label: 'Flight Schedule' },
-    { icon: FileText, label: 'Transport Reports' },
-    { icon: Clock, label: 'Real-time Status' },
-    { icon: Users, label: 'Passengers' },
-    { icon: FileText, label: 'Documents' },
-    { icon: Settings, label: 'Settings' }
+    { icon: BarChart3, label: 'Dashboard', active: true, href: `/events/${eventId}` },
+    { icon: Calendar, label: 'Flight Schedule', active: false, href: `/events/${eventId}/flight-schedules` },
+    { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/reports` },
+    { icon: Clock, label: 'Real-time Status', active: false, href: `/events/${eventId}/status` },
+    { icon: Users, label: 'Passengers', active: false, href: `/events/${eventId}/passengers` },
+    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` },
+    { icon: Settings, label: 'Settings', active: false, href: `/events/${eventId}/settings` }
   ];
 
   const statsCards = [
@@ -416,7 +416,12 @@ export default function EventDashboardPage() {
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md transform scale-105' 
                     : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:shadow-sm'
                 }`}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  setSidebarOpen(false);
+                  if (item.href) {
+                    router.push(item.href);
+                  }
+                }}
               >
                 <div className={`p-1.5 rounded-md mr-3 ${
                   item.active ? 'bg-white/20' : 'bg-gray-100'

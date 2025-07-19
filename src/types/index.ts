@@ -103,6 +103,42 @@ export interface FlightSchedule {
 	created_at: Date
 }
 
+export interface FlightScheduleCreate {
+	event_id: number;
+	first_name: string;
+	last_name: string;
+	flight_number: string;
+	arrival_time: string;
+	property_name: string;
+	vehicle_standby_arrival_time: string;
+	departure_time: string;
+	vehicle_standby_departure_time: string;
+}
+
+export interface FlightScheduleUpload {
+	event_id: number;
+	file: File;
+}
+
+export interface FlightScheduleResponse {
+	success: boolean;
+	data?: FlightSchedule[];
+	error?: string;
+	message?: string;
+}
+
+export interface FlightScheduleUploadResponse {
+	success: boolean;
+	data?: {
+		totalRecords: number;
+		processedRecords: number;
+		failedRecords: number;
+		schedules: FlightSchedule[];
+	};
+	error?: string;
+	message?: string;
+}
+
 // Transport report types
 export interface TransportReport {
 	report_id: number
