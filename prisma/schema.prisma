@@ -93,9 +93,9 @@ model FlightSchedule {
   flight_number               String   @db.VarChar(50)
   arrival_time                DateTime
   property_name               String   @db.VarChar(255)
-  vehicle_standby_arrival_time DateTime @db.Time
+  vehicle_standby_arrival_time DateTime
   departure_time              DateTime
-  vehicle_standby_departure_time DateTime @db.Time
+  vehicle_standby_departure_time DateTime
   status                      String   @default("pending") @db.VarChar(50)
   created_at                  DateTime @default(now())
   @@index([event_id])

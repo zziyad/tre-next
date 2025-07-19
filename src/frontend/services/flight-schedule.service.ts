@@ -2,7 +2,7 @@ import { apiService } from './api.service';
 import { FlightSchedule, FlightScheduleResponse, FlightScheduleUploadResponse } from '@/types';
 
 class FlightScheduleService {
-  private baseUrl = '/events';
+  private baseUrl = '/api/events';
 
   async getFlightSchedules(eventId: number): Promise<FlightScheduleResponse> {
     try {

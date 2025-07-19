@@ -230,6 +230,8 @@ export class FlightScheduleService implements IFlightScheduleService {
   private formatTime(value: any): string {
     if (!value) return '';
     
+    console.log('🕐 [SERVICE] Formatting time value:', value, 'type:', typeof value);
+    
     if (typeof value === 'string') {
       // Try to parse string as time (e.g., "3:20", "03:20", "1:00 AM", "3.20")
       const timePatterns = [
@@ -252,9 +254,12 @@ export class FlightScheduleService implements IFlightScheduleService {
             hours = 0;
           }
           
-          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          console.log('✅ [SERVICE] Time formatted successfully:', formattedTime);
+          return formattedTime;
         }
       }
+      console.log('❌ [SERVICE] Failed to format time string:', value);
       return '';
     }
     
@@ -286,19 +291,32 @@ export class FlightScheduleService implements IFlightScheduleService {
           return null;
         }
       } else if (typeof date === 'string') {
+        console.log('📅 [SERVICE] Parsing date string:', date);
+        
         // Try to parse various date formats
         const datePatterns = [
-          /^\d{1,2}\/\d{1,2}\/\d{4}$/, // M/D/YYYY
-          /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
-          /^\d{1,2}-\d{1,2}-\d{4}$/, // D-M-YYYY
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // M/D/YYYY
+          /^(\d{4})-(\d{2})-(\d{2})$/, // YYYY-MM-DD
+          /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // D-M-YYYY
         ];
 
         let parsedDate: Date | null = null;
         for (const pattern of datePatterns) {
-          if (pattern.test(date)) {
-            parsedDate = new Date(date);
+          const match = date.match(pattern);
+          if (match) {
+            if (pattern.source.includes('M/D/YYYY')) {
+              // Handle M/D/YYYY format (like 7/23/2025)
+              const month = parseInt(match[1]) - 1; // Month is 0-indexed
+              const day = parseInt(match[2]);
+              const year = parseInt(match[3]);
+              parsedDate = new Date(year, month, day);
+            } else {
+              parsedDate = new Date(date);
+            }
+            
             if (!isNaN(parsedDate.getTime())) {
               dateStr = parsedDate.toISOString().split('T')[0];
+              console.log('✅ [SERVICE] Date parsed successfully:', dateStr);
               break;
             }
           }
@@ -309,6 +327,9 @@ export class FlightScheduleService implements IFlightScheduleService {
           const directDate = new Date(date);
           if (!isNaN(directDate.getTime())) {
             dateStr = directDate.toISOString().split('T')[0];
+            console.log('✅ [SERVICE] Date parsed with direct parsing:', dateStr);
+          } else {
+            console.log('❌ [SERVICE] Failed to parse date:', date);
           }
         }
       }
