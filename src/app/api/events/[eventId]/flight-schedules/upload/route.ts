@@ -3,10 +3,11 @@ import { container } from '@/backend/container';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
-    const eventId = parseInt(params.eventId);
+    const { eventId: eventIdStr } = await params;
+    const eventId = parseInt(eventIdStr);
     
     if (isNaN(eventId)) {
       return NextResponse.json(

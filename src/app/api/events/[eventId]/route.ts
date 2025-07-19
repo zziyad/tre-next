@@ -4,7 +4,7 @@ import { getSessionFromCookie } from '@/lib/auth';
 
 export async function GET(
   request: Request,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const user = await getSessionFromCookie();
@@ -17,7 +17,8 @@ export async function GET(
       );
     }
 
-    const eventId = parseInt(params.eventId);
+    const { eventId: eventIdStr } = await params;
+    const eventId = parseInt(eventIdStr);
     console.log('Requested eventId:', eventId);
     
     if (isNaN(eventId)) {

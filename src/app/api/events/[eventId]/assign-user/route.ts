@@ -4,7 +4,7 @@ import { getSessionFromCookie } from '@/lib/auth';
 
 export async function POST(
   request: Request,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const user = await getSessionFromCookie();
@@ -15,7 +15,8 @@ export async function POST(
       );
     }
 
-    const eventId = parseInt(params.eventId);
+    const { eventId: eventIdStr } = await params;
+    const eventId = parseInt(eventIdStr);
     if (isNaN(eventId)) {
       return NextResponse.json(
         { error: 'Invalid event ID' },
