@@ -96,9 +96,9 @@ export interface FlightSchedule {
 	flight_number: string
 	arrival_time: Date
 	property_name: string
-	vehicle_standby_arrival_time: string
+	vehicle_standby_arrival_time: Date
 	departure_time: Date
-	vehicle_standby_departure_time: string
+	vehicle_standby_departure_time: Date
 	status: string
 	created_at: Date
 }

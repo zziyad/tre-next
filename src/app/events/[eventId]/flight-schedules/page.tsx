@@ -81,8 +81,8 @@ export default function FlightSchedulesPage() {
     }
   };
 
-  const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
+  const formatDateTime = (dateTime: Date | string) => {
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -92,8 +92,8 @@ export default function FlightSchedulesPage() {
     });
   };
 
-  const formatTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
+  const formatTime = (dateTime: Date | string) => {
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',

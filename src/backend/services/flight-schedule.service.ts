@@ -26,14 +26,7 @@ export class FlightScheduleService implements IFlightScheduleService {
   async getFlightSchedulesByEventId(eventId: number): Promise<FlightSchedule[]> {
     try {
       const schedules = await this.flightScheduleRepository.findByEventId(eventId);
-      return schedules.map(schedule => ({
-        ...schedule,
-        arrival_time: schedule.arrival_time.toISOString(),
-        vehicle_standby_arrival_time: schedule.vehicle_standby_arrival_time.toISOString(),
-        departure_time: schedule.departure_time.toISOString(),
-        vehicle_standby_departure_time: schedule.vehicle_standby_departure_time.toISOString(),
-        created_at: schedule.created_at.toISOString(),
-      }));
+      return schedules; // Return as-is since they're already Date objects
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get flight schedules';
       throw new Error(`FlightScheduleService.getFlightSchedulesByEventId: ${errorMessage}`);
@@ -43,16 +36,7 @@ export class FlightScheduleService implements IFlightScheduleService {
   async getFlightScheduleById(flightId: number): Promise<FlightSchedule | null> {
     try {
       const schedule = await this.flightScheduleRepository.findById(flightId);
-      if (!schedule) return null;
-
-      return {
-        ...schedule,
-        arrival_time: schedule.arrival_time.toISOString(),
-        vehicle_standby_arrival_time: schedule.vehicle_standby_arrival_time.toISOString(),
-        departure_time: schedule.departure_time.toISOString(),
-        vehicle_standby_departure_time: schedule.vehicle_standby_departure_time.toISOString(),
-        created_at: schedule.created_at.toISOString(),
-      };
+      return schedule; // Return as-is since it's already a Date object
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get flight schedule';
       throw new Error(`FlightScheduleService.getFlightScheduleById: ${errorMessage}`);
@@ -62,14 +46,7 @@ export class FlightScheduleService implements IFlightScheduleService {
   async updateFlightSchedule(flightId: number, data: Partial<FlightScheduleCreate>): Promise<FlightSchedule> {
     try {
       const updatedSchedule = await this.flightScheduleRepository.update(flightId, data);
-      return {
-        ...updatedSchedule,
-        arrival_time: updatedSchedule.arrival_time.toISOString(),
-        vehicle_standby_arrival_time: updatedSchedule.vehicle_standby_arrival_time.toISOString(),
-        departure_time: updatedSchedule.departure_time.toISOString(),
-        vehicle_standby_departure_time: updatedSchedule.vehicle_standby_departure_time.toISOString(),
-        created_at: updatedSchedule.created_at.toISOString(),
-      };
+      return updatedSchedule; // Return as-is since it's already a Date object
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update flight schedule';
       throw new Error(`FlightScheduleService.updateFlightSchedule: ${errorMessage}`);
@@ -79,14 +56,7 @@ export class FlightScheduleService implements IFlightScheduleService {
   async deleteFlightSchedule(flightId: number): Promise<FlightSchedule> {
     try {
       const deletedSchedule = await this.flightScheduleRepository.delete(flightId);
-      return {
-        ...deletedSchedule,
-        arrival_time: deletedSchedule.arrival_time.toISOString(),
-        vehicle_standby_arrival_time: deletedSchedule.vehicle_standby_arrival_time.toISOString(),
-        departure_time: deletedSchedule.departure_time.toISOString(),
-        vehicle_standby_departure_time: deletedSchedule.vehicle_standby_departure_time.toISOString(),
-        created_at: deletedSchedule.created_at.toISOString(),
-      };
+      return deletedSchedule; // Return as-is since it's already a Date object
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete flight schedule';
       throw new Error(`FlightScheduleService.deleteFlightSchedule: ${errorMessage}`);
@@ -182,14 +152,7 @@ export class FlightScheduleService implements IFlightScheduleService {
           totalRecords: dataRows.length,
           processedRecords: processedSchedules.length,
           failedRecords: failedRecords.length,
-          schedules: savedSchedules.map(schedule => ({
-            ...schedule,
-            arrival_time: schedule.arrival_time.toISOString(),
-            vehicle_standby_arrival_time: schedule.vehicle_standby_arrival_time.toISOString(),
-            departure_time: schedule.departure_time.toISOString(),
-            vehicle_standby_departure_time: schedule.vehicle_standby_departure_time.toISOString(),
-            created_at: schedule.created_at.toISOString(),
-          })),
+          schedules: savedSchedules, // Return as-is since they're already Date objects
         },
         message: `Successfully processed ${processedSchedules.length} records. ${failedRecords.length} records failed.`,
       };
@@ -199,51 +162,113 @@ export class FlightScheduleService implements IFlightScheduleService {
     }
   }
 
+  private formatTime(value: any): string {
+    if (!value) return '';
+    
+    if (typeof value === 'string') {
+      // Try to parse string as time (e.g., "3:20", "03:20", "1:00 AM", "3.20")
+      const timePatterns = [
+        /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/, // HH:mm or H:mm
+        /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i, // H:mm AM/PM
+        /^(\d{1,2})\.(\d{2})$/, // H.mm
+        /^(\d{1,2}):(\d{2}):(\d{2})$/, // HH:mm:ss
+      ];
+
+      for (const pattern of timePatterns) {
+        const match = value.toString().match(pattern);
+        if (match) {
+          let hours = parseInt(match[1]);
+          const minutes = parseInt(match[2]);
+          
+          // Handle AM/PM
+          if (match[3] && match[3].toUpperCase() === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (match[3] && match[3].toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+          
+          return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }
+      return '';
+    }
+    
+    if (typeof value === 'number') {
+      // Excel decimal time (e.g., 0.138888888888889 for 3:20)
+      const totalHours = value * 24;
+      const hours = Math.floor(totalHours);
+      const minutes = Math.round((totalHours - hours) * 60);
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+    
+    return '';
+  }
+
   private parseDateTime(date: any, time: any): Date | null {
     try {
-      // Handle different date formats
-      let dateStr = String(date);
-      let timeStr = String(time);
+      let dateStr = '';
+      let timeStr = '';
 
-      // If date is already a Date object or timestamp
+      // Handle date parsing
       if (date instanceof Date) {
         dateStr = date.toISOString().split('T')[0];
       } else if (typeof date === 'number') {
-        dateStr = new Date(date).toISOString().split('T')[0];
+        // Excel date number
+        if (date > 1000) {
+          const excelDate = new Date((date - 25569) * 86400 * 1000);
+          dateStr = excelDate.toISOString().split('T')[0];
+        } else {
+          return null;
+        }
+      } else if (typeof date === 'string') {
+        // Try to parse various date formats
+        const datePatterns = [
+          /^\d{1,2}\/\d{1,2}\/\d{4}$/, // M/D/YYYY
+          /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
+          /^\d{1,2}-\d{1,2}-\d{4}$/, // D-M-YYYY
+        ];
+
+        let parsedDate: Date | null = null;
+        for (const pattern of datePatterns) {
+          if (pattern.test(date)) {
+            parsedDate = new Date(date);
+            if (!isNaN(parsedDate.getTime())) {
+              dateStr = parsedDate.toISOString().split('T')[0];
+              break;
+            }
+          }
+        }
+
+        if (!dateStr) {
+          // Try direct parsing
+          const directDate = new Date(date);
+          if (!isNaN(directDate.getTime())) {
+            dateStr = directDate.toISOString().split('T')[0];
+          }
+        }
       }
 
-      // If time is already a Date object or timestamp
-      if (time instanceof Date) {
-        timeStr = time.toTimeString().split(' ')[0];
-      } else if (typeof time === 'number') {
-        timeStr = new Date(time).toTimeString().split(' ')[0];
+      if (!dateStr) {
+        return null;
       }
 
-      // Handle Excel date numbers
-      if (typeof date === 'number' && date > 1000) {
-        const excelDate = new Date((date - 25569) * 86400 * 1000);
-        dateStr = excelDate.toISOString().split('T')[0];
-      }
-
-      if (typeof time === 'number' && time < 1) {
-        // Excel time is a fraction of a day
-        const totalSeconds = time * 24 * 60 * 60;
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-        timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      // Handle time parsing
+      timeStr = this.formatTime(time);
+      if (!timeStr) {
+        return null;
       }
 
       // Combine date and time
       const dateTimeStr = `${dateStr}T${timeStr}`;
-      const parsedDate = new Date(dateTimeStr);
+      const parsedDateTime = new Date(dateTimeStr);
 
-      if (isNaN(parsedDate.getTime())) {
+      if (isNaN(parsedDateTime.getTime())) {
         return null;
       }
 
-      return parsedDate;
-    } catch {
+      return parsedDateTime;
+    } catch (error) {
+      console.error('Error parsing date/time:', error);
       return null;
     }
   }
