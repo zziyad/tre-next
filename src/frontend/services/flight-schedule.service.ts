@@ -2,14 +2,21 @@ import { apiService } from './api.service';
 import { FlightSchedule, FlightScheduleResponse, FlightScheduleUploadResponse } from '@/types';
 
 class FlightScheduleService {
-  private baseUrl = '/api/events';
+  private baseUrl = '/events';
 
   async getFlightSchedules(eventId: number): Promise<FlightScheduleResponse> {
     try {
-      const response = await apiService.get<FlightSchedule[]>(`${this.baseUrl}/${eventId}/flight-schedules`);
+      console.log('📤 [FRONTEND] Fetching flight schedules for eventId:', eventId);
+      const url = `${this.baseUrl}/${eventId}/flight-schedules`;
+      console.log('🌐 [FRONTEND] Fetch URL:', url);
+      
+      const response = await apiService.get<FlightSchedule[]>(url);
+      console.log('📥 [FRONTEND] Fetch response:', response);
+      
       return response as FlightScheduleResponse;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch flight schedules';
+      console.error('❌ [FRONTEND] Fetch error:', error);
       return {
         success: false,
         error: errorMessage,
