@@ -36,13 +36,22 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
   }, [eventId]);
 
   const uploadSchedules = useCallback(async (file: File): Promise<FlightScheduleUploadResponse> => {
+    console.log('🚀 [HOOK] Starting upload with file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
     setIsUploading(true);
     setError(null);
 
     try {
+      console.log('📤 [HOOK] Calling frontend service...');
       const response = await frontendFlightScheduleService.uploadFlightSchedules(eventId, file);
+      console.log('📥 [HOOK] Service response:', response);
       
       if (response.success && response.data) {
+        console.log('✅ [HOOK] Upload successful, refreshing schedules...');
         // Refresh the schedules list
         await fetchSchedules();
         
@@ -53,6 +62,7 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
           toast.warning(`${response.data.failedRecords} records failed to process`);
         }
       } else {
+        console.error('❌ [HOOK] Upload failed:', response.error);
         setError(response.error || 'Failed to upload flight schedules');
         toast.error(response.error || 'Failed to upload flight schedules');
       }
@@ -60,6 +70,7 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
       return response;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload flight schedules';
+      console.error('❌ [HOOK] Upload error:', err);
       setError(errorMessage);
       toast.error(errorMessage);
       

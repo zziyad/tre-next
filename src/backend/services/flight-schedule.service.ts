@@ -65,18 +65,31 @@ export class FlightScheduleService implements IFlightScheduleService {
 
   async uploadFlightSchedules(eventId: number, fileBuffer: Buffer): Promise<FlightScheduleUploadResponse> {
     try {
+      console.log('🔍 [SERVICE] Starting Excel parsing...');
+      console.log('📊 [SERVICE] Buffer size:', fileBuffer.length);
+      
       // Parse Excel file
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      console.log('📋 [SERVICE] Workbook sheets:', workbook.SheetNames);
+      
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
+      console.log('📄 [SERVICE] Using sheet:', sheetName);
+      
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      console.log('📈 [SERVICE] Parsed JSON data length:', jsonData.length);
+      console.log('📋 [SERVICE] First few rows:', jsonData.slice(0, 3));
 
       if (!jsonData || jsonData.length < 2) {
+        console.error('❌ [SERVICE] Invalid Excel format - insufficient data');
         throw new Error('Invalid Excel file format. File must contain at least a header row and one data row.');
       }
 
       const headers = jsonData[0] as string[];
       const dataRows = jsonData.slice(1) as any[][];
+      
+      console.log('📋 [SERVICE] Headers found:', headers);
+      console.log('📊 [SERVICE] Data rows count:', dataRows.length);
 
       // Validate headers
       const expectedHeaders = [
@@ -84,18 +97,29 @@ export class FlightScheduleService implements IFlightScheduleService {
         'Property Name', 'Vehicle Standby', 'Departure Date', 'Departure Time', 'Vehicle Standby'
       ];
 
+      console.log('🔍 [SERVICE] Expected headers:', expectedHeaders);
+      console.log('📋 [SERVICE] Actual headers:', headers);
+      
       const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
+      console.log('❌ [SERVICE] Missing headers:', missingHeaders);
+      
       if (missingHeaders.length > 0) {
+        console.error('❌ [SERVICE] Header validation failed');
         throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
       }
 
+      console.log('✅ [SERVICE] Header validation passed');
       const processedSchedules: FlightScheduleCreate[] = [];
       const failedRecords: string[] = [];
 
       // Process each row
+      console.log('🔄 [SERVICE] Starting row processing...');
       dataRows.forEach((row, index) => {
         try {
+          console.log(`📝 [SERVICE] Processing row ${index + 2}:`, row);
+          
           if (row.length < 10) {
+            console.log(`❌ [SERVICE] Row ${index + 2}: Insufficient data (${row.length} columns)`);
             failedRecords.push(`Row ${index + 2}: Insufficient data`);
             return;
           }
@@ -105,25 +129,40 @@ export class FlightScheduleService implements IFlightScheduleService {
             propertyName, vehicleStandbyArrival, departureDate, departureTime, vehicleStandbyDeparture
           ] = row;
 
+          console.log(`🔍 [SERVICE] Row ${index + 2} data:`, {
+            firstName, lastName, flightNumber, arrivalDate, arrivalTime,
+            propertyName, vehicleStandbyArrival, departureDate, departureTime, vehicleStandbyDeparture
+          });
+
           // Validate required fields
           if (!firstName || !lastName || !flightNumber || !arrivalDate || !arrivalTime ||
               !propertyName || !vehicleStandbyArrival || !departureDate || !departureTime || !vehicleStandbyDeparture) {
+            console.log(`❌ [SERVICE] Row ${index + 2}: Missing required fields`);
             failedRecords.push(`Row ${index + 2}: Missing required fields`);
             return;
           }
 
           // Parse dates and times
+          console.log(`🕐 [SERVICE] Row ${index + 2}: Parsing dates and times...`);
           const arrivalDateTime = this.parseDateTime(arrivalDate, arrivalTime);
           const departureDateTime = this.parseDateTime(departureDate, departureTime);
           const vehicleStandbyArrivalDateTime = this.parseDateTime(arrivalDate, vehicleStandbyArrival);
           const vehicleStandbyDepartureDateTime = this.parseDateTime(departureDate, vehicleStandbyDeparture);
 
+          console.log(`🕐 [SERVICE] Row ${index + 2}: Parsed dates:`, {
+            arrivalDateTime: arrivalDateTime?.toISOString(),
+            departureDateTime: departureDateTime?.toISOString(),
+            vehicleStandbyArrivalDateTime: vehicleStandbyArrivalDateTime?.toISOString(),
+            vehicleStandbyDepartureDateTime: vehicleStandbyDepartureDateTime?.toISOString()
+          });
+
           if (!arrivalDateTime || !departureDateTime || !vehicleStandbyArrivalDateTime || !vehicleStandbyDepartureDateTime) {
+            console.log(`❌ [SERVICE] Row ${index + 2}: Invalid date/time format`);
             failedRecords.push(`Row ${index + 2}: Invalid date/time format`);
             return;
           }
 
-          processedSchedules.push({
+          const schedule = {
             event_id: eventId,
             first_name: String(firstName).trim(),
             last_name: String(lastName).trim(),
@@ -133,20 +172,41 @@ export class FlightScheduleService implements IFlightScheduleService {
             vehicle_standby_arrival_time: vehicleStandbyArrivalDateTime.toISOString(),
             departure_time: departureDateTime.toISOString(),
             vehicle_standby_departure_time: vehicleStandbyDepartureDateTime.toISOString(),
-          });
+          };
+
+          console.log(`✅ [SERVICE] Row ${index + 2}: Processed successfully:`, schedule);
+          processedSchedules.push(schedule);
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`❌ [SERVICE] Row ${index + 2}: Error:`, error);
           failedRecords.push(`Row ${index + 2}: ${errorMessage}`);
         }
       });
 
       // Save to database
+      console.log('💾 [SERVICE] Processing complete. Summary:', {
+        totalRecords: dataRows.length,
+        processedRecords: processedSchedules.length,
+        failedRecords: failedRecords.length
+      });
+      
       let savedSchedules: FlightSchedule[] = [];
       if (processedSchedules.length > 0) {
-        savedSchedules = await this.flightScheduleRepository.createMany(processedSchedules);
+        console.log('💾 [SERVICE] Saving to database...');
+        console.log('📊 [SERVICE] Schedules to save:', processedSchedules);
+        
+        try {
+          savedSchedules = await this.flightScheduleRepository.createMany(processedSchedules);
+          console.log('✅ [SERVICE] Database save successful. Saved schedules:', savedSchedules);
+        } catch (dbError) {
+          console.error('❌ [SERVICE] Database save failed:', dbError);
+          throw new Error(`Database save failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+        }
+      } else {
+        console.log('⚠️ [SERVICE] No schedules to save');
       }
 
-      return {
+      const result = {
         success: true,
         data: {
           totalRecords: dataRows.length,
@@ -156,8 +216,13 @@ export class FlightScheduleService implements IFlightScheduleService {
         },
         message: `Successfully processed ${processedSchedules.length} records. ${failedRecords.length} records failed.`,
       };
+
+      console.log('✅ [SERVICE] Final result:', result);
+      return result;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload flight schedules';
+      console.error('❌ [SERVICE] Upload flight schedules error:', error);
+      console.error('❌ [SERVICE] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw new Error(`FlightScheduleService.uploadFlightSchedules: ${errorMessage}`);
     }
   }

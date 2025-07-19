@@ -37,22 +37,30 @@ export class FlightScheduleRepository implements IFlightScheduleRepository {
 
   async createMany(data: FlightScheduleCreate[]): Promise<FlightSchedule[]> {
     try {
+      console.log('💾 [REPO] Starting createMany with data:', data);
+      
+      const mappedData = data.map(schedule => ({
+        event_id: schedule.event_id,
+        first_name: schedule.first_name,
+        last_name: schedule.last_name,
+        flight_number: schedule.flight_number,
+        arrival_time: new Date(schedule.arrival_time),
+        property_name: schedule.property_name,
+        vehicle_standby_arrival_time: new Date(schedule.vehicle_standby_arrival_time),
+        departure_time: new Date(schedule.departure_time),
+        vehicle_standby_departure_time: new Date(schedule.vehicle_standby_departure_time),
+      }));
+      
+      console.log('💾 [REPO] Mapped data for database:', mappedData);
+      
       const flightSchedules = await prisma.flightSchedule.createMany({
-        data: data.map(schedule => ({
-          event_id: schedule.event_id,
-          first_name: schedule.first_name,
-          last_name: schedule.last_name,
-          flight_number: schedule.flight_number,
-          arrival_time: new Date(schedule.arrival_time),
-          property_name: schedule.property_name,
-          vehicle_standby_arrival_time: new Date(schedule.vehicle_standby_arrival_time),
-          departure_time: new Date(schedule.departure_time),
-          vehicle_standby_departure_time: new Date(schedule.vehicle_standby_departure_time),
-        })),
+        data: mappedData,
       });
+      
+      console.log('💾 [REPO] createMany result:', flightSchedules);
 
       // Return the created records
-      return await prisma.flightSchedule.findMany({
+      const savedRecords = await prisma.flightSchedule.findMany({
         where: {
           event_id: data[0]?.event_id,
         },
@@ -61,8 +69,13 @@ export class FlightScheduleRepository implements IFlightScheduleRepository {
         },
         take: data.length,
       });
+      
+      console.log('💾 [REPO] Retrieved saved records:', savedRecords);
+      return savedRecords;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create flight schedules';
+      console.error('❌ [REPO] createMany error:', error);
+      console.error('❌ [REPO] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       throw new Error(`FlightScheduleRepository.createMany: ${errorMessage}`);
     }
   }
