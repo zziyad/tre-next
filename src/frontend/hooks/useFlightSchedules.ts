@@ -14,20 +14,26 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSchedules = useCallback(async () => {
+    console.log('🚀 [HOOK] Starting fetchSchedules for eventId:', eventId);
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('📤 [HOOK] Calling getFlightSchedules...');
       const response = await frontendFlightScheduleService.getFlightSchedules(eventId);
+      console.log('📥 [HOOK] getFlightSchedules response:', response);
       
       if (response.success && response.data) {
+        console.log('✅ [HOOK] Setting schedules:', response.data);
         setSchedules(response.data);
       } else {
+        console.error('❌ [HOOK] Fetch failed:', response.error);
         setError(response.error || 'Failed to fetch flight schedules');
         toast.error(response.error || 'Failed to fetch flight schedules');
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch flight schedules';
+      console.error('❌ [HOOK] Fetch error:', err);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
