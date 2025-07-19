@@ -37,7 +37,7 @@ class FlightScheduleService {
       formData.append('file', file);
       console.log('📦 [FRONTEND] FormData created');
 
-      const url = `${this.baseUrl}/${eventId}/flight-schedules/upload`;
+      const url = `/api${this.baseUrl}/${eventId}/flight-schedules/upload`;
       console.log('🌐 [FRONTEND] Upload URL:', url);
 
       // Use fetch directly for FormData since apiService expects JSON
