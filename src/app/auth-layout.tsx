@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
+import '../globals.css';
 import { Toaster } from '@/components/ui/sonner';
-import { Navbar } from '@/components/ui/navbar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Transport Reporting System',
 };
 
-export default function RootLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -19,14 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          {children}
         </div>
         <Toaster />
       </body>
     </html>
   );
-}
+} 
