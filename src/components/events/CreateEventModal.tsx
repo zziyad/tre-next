@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Plus, Minus, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { frontendEventService } from '@/frontend/services/event.service';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
@@ -30,15 +31,15 @@ const formSchema = z.object({
   flets: z.array(z.object({
     name: z.string().min(1, 'Fleet marker name is required'),
     description: z.string().optional(),
-  })).default([]),
+  })),
   hotels: z.array(z.object({
     name: z.string().min(1, 'Hotel name is required'),
     description: z.string().optional(),
-  })).default([]),
+  })),
   destinations: z.array(z.object({
     name: z.string().min(1, 'Destination name is required'),
     description: z.string().optional(),
-  })).default([]),
+  })),
 });
 
 interface CreateEventModalProps {
@@ -101,17 +102,10 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/events/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
+      const result = await frontendEventService.createEvent(values);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create event');
       }
 
       toast.success('Event created successfully!');
@@ -119,8 +113,9 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
       form.reset();
       setCurrentStep(1);
       onEventCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create event');
+          } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create event';
+        toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -253,7 +248,7 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
             ))}
             {fletsArray.fields.length === 0 && (
               <p className="text-muted-foreground text-center py-4">
-                No fleet markers added yet. Click "Add Fleet Marker" to get started.
+                No fleet markers added yet. Click &quot;Add Fleet Marker&quot; to get started.
               </p>
             )}
           </div>
@@ -320,7 +315,7 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
             ))}
             {hotelsArray.fields.length === 0 && (
               <p className="text-muted-foreground text-center py-4">
-                No hotels added yet. Click "Add Hotel" to get started.
+                No hotels added yet. Click &quot;Add Hotel&quot; to get started.
               </p>
             )}
           </div>
@@ -387,7 +382,7 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
             ))}
             {destinationsArray.fields.length === 0 && (
               <p className="text-muted-foreground text-center py-4">
-                No destinations added yet. Click "Add Destination" to get started.
+                No destinations added yet. Click &quot;Add Destination&quot; to get started.
               </p>
             )}
           </div>
@@ -463,25 +458,25 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Event
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create New Event</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="px-2 sm:px-0">
+          <DialogTitle className="text-lg sm:text-xl">Create New Event</DialogTitle>
+          <DialogDescription className="text-sm">
             Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].description}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-center mb-6">
-          <div className="flex items-center space-x-2">
+        <div className="flex justify-center mb-4 sm:mb-6">
+          <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto pb-2">
             {STEPS.map((step) => (
-              <div key={step.id} className="flex items-center">
+              <div key={step.id} className="flex items-center flex-shrink-0">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
                     step.id === currentStep
                       ? 'bg-primary text-primary-foreground'
                       : step.id < currentStep
@@ -493,7 +488,7 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
                 </div>
                 {step.id < STEPS.length && (
                   <div
-                    className={`w-8 h-px mx-2 ${
+                    className={`w-4 sm:w-8 h-px mx-1 sm:mx-2 ${
                       step.id < currentStep ? 'bg-primary' : 'bg-muted'
                     }`}
                   />

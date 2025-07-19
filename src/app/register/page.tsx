@@ -39,17 +39,18 @@ export default function RegisterPage() {
       }
 
       router.push('/dashboard');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to register');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to register';
+      toast.error(errorMessage);
       throw err; // Re-throw to be handled by the form
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Create your account
           </h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -60,7 +61,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <AuthForm mode="register" onSubmit={handleRegister} />
+        <AuthForm mode="register" />
       </div>
     </div>
   );

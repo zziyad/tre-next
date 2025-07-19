@@ -1,30 +1,26 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { deleteSession } from '@/lib/auth';
+import { NextResponse } from 'next/server'
 
-export async function POST() {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session_token')?.value;
-    
-    if (token) {
-      const response = await deleteSession(token);
-      const jsonResponse = NextResponse.json({ message: 'Logged out successfully' });
-      
-      // Copy the Set-Cookie header from the session response
-      const setCookie = response.headers.get('Set-Cookie');
-      if (setCookie) {
-        jsonResponse.headers.set('Set-Cookie', setCookie);
-      }
+export async function POST(request: Request) {
+	try {
+		const response = NextResponse.json({
+			success: true,
+			message: 'Logged out successfully'
+		})
 
-      return jsonResponse;
-    }
+		// Clear the session cookie
+		response.cookies.set('session_token', '', {
+			httpOnly: true,
+			path: '/',
+			sameSite: 'lax',
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: 0 // This expires the cookie immediately
+		})
 
-    return NextResponse.json({ message: 'Logged out successfully' });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Something went wrong' },
-      { status: 500 }
-    );
-  }
+		return response
+	} catch (error) {
+		return NextResponse.json(
+			{ success: false, error: 'Something went wrong' },
+			{ status: 500 }
+		)
+	}
 } 

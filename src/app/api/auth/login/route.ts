@@ -1,60 +1,63 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyPassword, createSession } from '@/lib/auth';
+import { NextResponse } from 'next/server'
+import { container } from '@/backend/container'
+import { loginSchema } from '@/backend/validation/schemas'
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { username, password } = body;
+	try {
+		const body = await request.json()
+		
+		// Validate input
+		const validationResult = loginSchema.safeParse(body)
+		if (!validationResult.success) {
+			return NextResponse.json(
+				{ 
+					success: false,
+					error: 'Invalid input', 
+					details: validationResult.error.issues 
+				},
+				{ status: 400 }
+			)
+		}
 
-    if (!username || !password) {
-      return NextResponse.json(
-        { error: 'Username and password are required' },
-        { status: 400 }
-      );
-    }
+		const { username, password } = validationResult.data
 
-    const user = await prisma.user.findUnique({
-      where: { username },
-    });
+		// Use service layer
+		const result = await container.authService.login({ username, password })
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
+		if (!result.success) {
+			return NextResponse.json(
+				{ success: false, error: result.error },
+				{ status: 401 }
+			)
+		}
 
-    const isValid = await verifyPassword(password, user.password_hash);
+		// Create session cookie
+		const { token } = await container.sessionService.createSession(result.data!.user.user_id)
+		
+		const response = NextResponse.json({
+			success: true,
+			data: {
+				user: result.data!.user
+			}
+		})
 
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
-    }
+		// Set session cookie
+		const expires = new Date()
+		expires.setDate(expires.getDate() + 7)
+		
+		response.cookies.set('session_token', token, {
+			httpOnly: true,
+			path: '/',
+			sameSite: 'lax',
+			secure: process.env.NODE_ENV === 'production',
+			expires
+		})
 
-    const { token, response } = await createSession(user.user_id);
-
-    const jsonResponse = NextResponse.json({
-      user: {
-        id: user.user_id,
-        username: user.username,
-        role: user.role,
-      }
-    });
-
-    // Copy the Set-Cookie header from the session response
-    const setCookie = response.headers.get('Set-Cookie');
-    if (setCookie) {
-      jsonResponse.headers.set('Set-Cookie', setCookie);
-    }
-
-    return jsonResponse;
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Something went wrong' },
-      { status: 500 }
-    );
-  }
+		return response
+	} catch (error) {
+		return NextResponse.json(
+			{ success: false, error: 'Something went wrong' },
+			{ status: 500 }
+		)
+	}
 } 
