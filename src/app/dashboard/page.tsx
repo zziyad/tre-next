@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import CreateEventModal from '@/components/events/CreateEventModal';
 import { useAuth } from '@/frontend/hooks/useAuth';
 import { useEvents } from '@/frontend/hooks/useEvents';
+import { DefaultLayout } from '@/components/layout/DefaultLayout';
 
 export default function EventsListPage() {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -51,24 +52,27 @@ export default function EventsListPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.username}</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-            <Badge variant="secondary" className="text-center">
-              {user.role || 'User'}
-            </Badge>
-          </div>
+    <DefaultLayout
+      title="Transport Events"
+      subtitle="Welcome back, manage your events"
+      showSidebar={false}
+      showMenuToggle={false}
+    >
+      {/* User Info */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport Events</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.username}</p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+          <Badge variant="secondary" className="text-center">
+            {user.role || 'User'}
+          </Badge>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto">
+      <main>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 lg:mb-8 gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Your Events</h2>
@@ -135,7 +139,7 @@ export default function EventsListPage() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </div>
+      </main>
+    </DefaultLayout>
   );
 } 

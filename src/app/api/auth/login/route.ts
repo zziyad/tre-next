@@ -3,21 +3,21 @@ import { container } from '@/backend/container'
 import { loginSchema } from '@/backend/validation/schemas'
 
 export async function POST(request: Request) {
-	try {
+  try {
 		const body = await request.json()
-		
+
 		// Validate input
 		const validationResult = loginSchema.safeParse(body)
 		if (!validationResult.success) {
-			return NextResponse.json(
+      return NextResponse.json(
 				{ 
 					success: false,
 					error: 'Invalid input', 
 					details: validationResult.error.issues 
 				},
-				{ status: 400 }
+        { status: 400 }
 			)
-		}
+    }
 
 		const { username, password } = validationResult.data
 
@@ -25,20 +25,20 @@ export async function POST(request: Request) {
 		const result = await container.authService.login({ username, password })
 
 		if (!result.success) {
-			return NextResponse.json(
+      return NextResponse.json(
 				{ success: false, error: result.error },
-				{ status: 401 }
+        { status: 401 }
 			)
-		}
+    }
 
 		// Create session cookie
 		const { token } = await container.sessionService.createSession(result.data!.user.user_id)
-		
+
 		const response = NextResponse.json({
 			success: true,
 			data: {
 				user: result.data!.user
-			}
+      }
 		})
 
 		// Set session cookie
@@ -54,10 +54,10 @@ export async function POST(request: Request) {
 		})
 
 		return response
-	} catch (error) {
-		return NextResponse.json(
+  } catch (error) {
+    return NextResponse.json(
 			{ success: false, error: 'Something went wrong' },
-			{ status: 500 }
+      { status: 500 }
 		)
-	}
+  }
 } 

@@ -2,29 +2,29 @@ import { NextResponse } from 'next/server'
 import { getSessionFromCookie } from '@/lib/auth'
 
 export async function GET(request: Request) {
-	try {
+  try {
 		const user = await getSessionFromCookie()
-		if (!user) {
-			return NextResponse.json(
+    if (!user) {
+      return NextResponse.json(
 				{ success: false, error: 'Not authenticated' },
-				{ status: 401 }
+        { status: 401 }
 			)
-		}
+    }
 
-		return NextResponse.json({
+    return NextResponse.json({
 			success: true,
 			data: {
-				user: {
+      user: {
 					user_id: user.user_id,
-					username: user.username,
-					role: user.role
-				}
+        username: user.username,
+        role: user.role
+      }
 			}
 		})
-	} catch (error) {
-		return NextResponse.json(
+  } catch (error) {
+    return NextResponse.json(
 			{ success: false, error: 'Something went wrong' },
-			{ status: 500 }
+      { status: 500 }
 		)
-	}
+  }
 } 

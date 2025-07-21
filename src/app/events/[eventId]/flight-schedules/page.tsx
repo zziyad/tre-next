@@ -7,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Download, FileSpreadsheet, Users, Calendar, Clock, Plane, Building, Car } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, Calendar, Plane, Building, Car } from 'lucide-react';
 import { useFlightSchedules } from '@/frontend/hooks/useFlightSchedules';
 import { toast } from 'sonner';
+import { DefaultLayout } from '@/components/layout/DefaultLayout';
+import { BarChart3, Calendar as CalendarIcon, FileText, Clock, Users, Settings } from 'lucide-react';
 
 export default function FlightSchedulesPage() {
   const params = useParams();
@@ -24,6 +26,17 @@ export default function FlightSchedulesPage() {
     error,
     uploadSchedules,
   } = useFlightSchedules({ eventId });
+
+  // Define sidebar items with Flight Schedule as active
+  const sidebarItems = [
+    { icon: BarChart3, label: 'Dashboard', active: false, href: `/events/${eventId}` },
+    { icon: CalendarIcon, label: 'Flight Schedule', active: true, href: `/events/${eventId}/flight-schedules` },
+    { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/reports` },
+    { icon: Clock, label: 'Real-time Status', active: false, href: `/events/${eventId}/status` },
+    { icon: Users, label: 'Passengers', active: false, href: `/events/${eventId}/passengers` },
+    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` },
+    { icon: Settings, label: 'Settings', active: false, href: `/events/${eventId}/settings` }
+  ];
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -114,12 +127,19 @@ export default function FlightSchedulesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
+    <DefaultLayout
+      eventId={eventId.toString()}
+      title="Flight Schedules"
+      subtitle="Upload and manage flight schedule data"
+      showBackButton={true}
+      backUrl={`/events/${eventId}`}
+      sidebarItems={sidebarItems}
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Flight Schedules</h1>
-          <p className="text-gray-600 mt-1">Manage flight schedules and passenger information for Event #{eventId}</p>
+          <p className="text-gray-600 mt-1">Manage flight schedules and passenger information</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -330,6 +350,6 @@ export default function FlightSchedulesPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </DefaultLayout>
   );
 } 

@@ -3,21 +3,21 @@ import { container } from '@/backend/container'
 import { createUserSchema } from '@/backend/validation/schemas'
 
 export async function POST(request: Request) {
-	try {
+  try {
 		const body = await request.json()
-		
+
 		// Validate input
 		const validationResult = createUserSchema.safeParse(body)
 		if (!validationResult.success) {
-			return NextResponse.json(
+      return NextResponse.json(
 				{ 
 					success: false,
 					error: 'Invalid input', 
 					details: validationResult.error.issues 
 				},
-				{ status: 400 }
+        { status: 400 }
 			)
-		}
+    }
 
 		const userData = validationResult.data
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 		const result = await container.authService.register(userData)
 
 		if (!result.success) {
-			return NextResponse.json(
+      return NextResponse.json(
 				{ success: false, error: result.error },
 				{ status: result.error === 'Username already exists' ? 409 : 500 }
 			)
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
 		return response
 	} catch (error: unknown) {
 		console.error('Registration error:', error);
-		return NextResponse.json(
+    return NextResponse.json(
 			{ success: false, error: 'Something went wrong' },
-			{ status: 500 }
+      { status: 500 }
 		)
-	}
+  }
 } 

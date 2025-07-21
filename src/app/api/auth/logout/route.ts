@@ -17,10 +17,10 @@ export async function POST(request: Request) {
 		})
 
 		return response
-	} catch (error) {
-		return NextResponse.json(
+  } catch (error) {
+    return NextResponse.json(
 			{ success: false, error: 'Something went wrong' },
-			{ status: 500 }
+      { status: 500 }
 		)
-	}
+  }
 } 

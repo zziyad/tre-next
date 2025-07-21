@@ -50,10 +50,10 @@ export async function GET(
       // For now, let's be more permissive and allow access if event exists
       // TODO: Remove this in production and ensure proper EventUser relationships
       if (!eventExists) {
-        return NextResponse.json(
+      return NextResponse.json(
           { error: 'Event not found' },
-          { status: 404 }
-        );
+        { status: 404 }
+      );
       }
       
       // Temporarily allow access - in production you should ensure EventUser relationships exist
