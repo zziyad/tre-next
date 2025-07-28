@@ -59,7 +59,7 @@ export default function EventsListPage() {
       showMenuToggle={false}
     >
       {/* User Info */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 w-full">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport Events</h1>
           <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.username}</p>
@@ -72,8 +72,8 @@ export default function EventsListPage() {
       </div>
 
       {/* Main Content */}
-      <main>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 lg:mb-8 gap-4">
+      <main className="w-full">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 lg:mb-8 gap-4 w-full">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Your Events</h2>
             <p className="text-gray-600 text-sm lg:text-base">Select an event to manage its details</p>
@@ -84,11 +84,11 @@ export default function EventsListPage() {
         </div>
 
         {events.length > 0 ? (
-          <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid w-full gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
               <Card 
                 key={event.event_id} 
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] h-full flex flex-col"
                 onClick={() => handleEventClick(event.event_id)}
               >
                 <CardHeader>
@@ -102,7 +102,7 @@ export default function EventsListPage() {
                     </CardDescription>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1 flex flex-col justify-end">
                   <div className="space-y-4">
                     {(event.start_date || event.end_date) && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -125,19 +125,21 @@ export default function EventsListPage() {
             ))}
           </div>
         ) : (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="max-w-md mx-auto">
-                <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-6" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No events yet</h3>
-                <p className="text-gray-600 mb-8">
-                  Get started by creating your first transport event. You&apos;ll be able to manage 
-                  fleet markers, hotels, destinations, and more.
-                </p>
-                <CreateEventModal onEventCreated={handleEventCreated} />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex justify-center items-center w-full">
+            <Card className="text-center py-12 w-full max-w-xl">
+              <CardContent>
+                <div className="mx-auto">
+                  <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-6" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No events yet</h3>
+                  <p className="text-gray-600 mb-8">
+                    Get started by creating your first transport event. You&apos;ll be able to manage 
+                    fleet markers, hotels, destinations, and more.
+                  </p>
+                  <CreateEventModal onEventCreated={handleEventCreated} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </main>
     </DefaultLayout>

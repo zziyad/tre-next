@@ -64,28 +64,28 @@ export function Navbar({
   };
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white shadow-xl border-b border-gray-700">
-      <div className="px-4 py-4 lg:px-6 lg:py-5">
+    <div className="bg-card border-b border-border shadow-sm">
+      <div className="px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 lg:space-x-4">
-            <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-              <Plane className="h-6 w-6 lg:h-7 lg:w-7 text-blue-300" />
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold lg:text-xl tracking-tight">{title}</h1>
-              <p className="text-gray-300 text-xs lg:text-sm hidden sm:block font-medium">{subtitle}</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base font-semibold sm:text-lg lg:text-xl tracking-tight text-foreground truncate">{title}</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block font-medium truncate">{subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-3 lg:space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Back Button */}
             {showBackButton && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-gray-800 p-2 lg:px-3 lg:py-2"
+                className="text-foreground hover:bg-accent hover:text-accent-foreground p-2 sm:px-3 sm:py-2"
                 onClick={handleBack}
               >
-                <ArrowLeft className="h-4 w-4 lg:h-5 lg:w-5 mr-1 lg:mr-2" />
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline text-sm font-medium">Back</span>
               </Button>
             )}
@@ -96,9 +96,9 @@ export function Navbar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:bg-gray-800 p-2"
+                  className="text-foreground hover:bg-accent hover:text-accent-foreground p-2"
                 >
-                  <User className="h-4 w-4 lg:h-5 lg:w-5" />
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -119,7 +119,7 @@ export function Navbar({
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden text-white hover:bg-gray-800"
+                className="lg:hidden text-foreground hover:bg-accent hover:text-accent-foreground"
                 onClick={onMenuToggle}
               >
                 <Menu className="h-4 w-4" />

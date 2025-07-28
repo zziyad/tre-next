@@ -102,6 +102,11 @@ export const createRealTimeStatusSchema = z.object({
 	status: z.string().default('pending')
 })
 
+// Document validation schemas
+export const createDocumentSchema = z.object({
+	name: z.string().min(1, 'Document name is required').max(255, 'Document name must be less than 255 characters')
+})
+
 // Query parameter schemas
 export const paginationSchema = z.object({
 	page: z.string().transform(Number).pipe(z.number().min(1)).default(() => 1),

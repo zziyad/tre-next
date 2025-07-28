@@ -371,18 +371,18 @@ export default function EventDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-8 w-full">
         {statsCards.map((card, index) => (
-          <Card key={index} className="bg-white hover:shadow-lg transition-all duration-300 border-0 shadow-sm hover:shadow-xl hover:-translate-y-1">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">{card.title}</p>
-                  <p className="text-3xl lg:text-4xl font-bold text-gray-900 mb-1">{card.value}</p>
-                  <p className="text-sm text-gray-500 leading-tight">{card.subtitle}</p>
+          <Card key={index} className="bg-white hover:shadow-lg transition-all duration-300 border-0 shadow-sm hover:shadow-xl hover:-translate-y-1 h-full">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center justify-between h-full">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide truncate">{card.title}</p>
+                  <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 truncate">{card.value}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 leading-tight line-clamp-2">{card.subtitle}</p>
                 </div>
-                <div className={`p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 shadow-inner ml-4`}>
-                  <card.icon className={`h-6 w-6 lg:h-7 lg:w-7 ${card.color}`} />
+                <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 shadow-inner ml-2 sm:ml-4 flex-shrink-0`}>
+                  <card.icon className={`h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 ${card.color}`} />
                 </div>
               </div>
             </CardContent>

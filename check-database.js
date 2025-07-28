@@ -1,61 +1,44 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client')
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function checkDatabase() {
   try {
-    console.log('🔍 Checking database...');
+    console.log('Checking database connection...')
     
-    // Check events
-    const events = await prisma.event.findMany({
+    // Test connection
+    await prisma.$connect()
+    console.log('Database connection successful')
+    
+    // Check if there are any documents
+    const documents = await prisma.document.findMany({
       include: {
-        flight_schedules: true
+        user: {
+          select: {
+            username: true
+          }
+        }
       }
-    });
+    })
     
-    console.log('📋 Events found:', events.length);
-    events.forEach(event => {
-      console.log(`  Event ID: ${event.event_id}, Name: ${event.name}, Flight Schedules: ${event.flight_schedules.length}`);
-    });
-    
-    // Check all flight schedules
-    const allFlightSchedules = await prisma.flightSchedule.findMany({
-      include: {
-        event: true
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
-    
-    console.log('✈️ All flight schedules found:', allFlightSchedules.length);
-    allFlightSchedules.forEach(schedule => {
-      console.log(`  Flight ID: ${schedule.flight_id}, Event ID: ${schedule.event_id}, Passenger: ${schedule.first_name} ${schedule.last_name}, Flight: ${schedule.flight_number}`);
-    });
-    
-    // Check specific event
-    const event2 = await prisma.event.findUnique({
-      where: { event_id: 2 },
-      include: {
-        flight_schedules: true
-      }
-    });
-    
-    if (event2) {
-      console.log(`\n📊 Event 2 details:`, {
-        event_id: event2.event_id,
-        name: event2.name,
-        flight_schedules_count: event2.flight_schedules.length
-      });
-    } else {
-      console.log('\n❌ Event 2 not found');
+    console.log('Documents in database:', documents.length)
+    if (documents.length > 0) {
+      console.log('Sample document:', documents[0])
     }
     
+    // Check if there are any users
+    const users = await prisma.user.findMany()
+    console.log('Users in database:', users.length)
+    
+    // Check if there are any events
+    const events = await prisma.event.findMany()
+    console.log('Events in database:', events.length)
+    
   } catch (error) {
-    console.error('❌ Error checking database:', error);
+    console.error('Database check failed:', error)
   } finally {
-    await prisma.$disconnect();
+    await prisma.$disconnect()
   }
 }
 
-checkDatabase(); 
+checkDatabase() 

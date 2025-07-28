@@ -89,6 +89,53 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
     }
   }, [eventId, fetchSchedules]);
 
+  const downloadSchedules = useCallback(async () => {
+    console.log('🚀 [HOOK] Starting download for eventId:', eventId);
+    
+    try {
+      console.log('📤 [HOOK] Calling download API...');
+      const response = await fetch(`/api/events/${eventId}/flight-schedules/download`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to download flight schedules');
+      }
+
+      // Get the filename from the response headers
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'flight-schedules.xlsx';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('✅ [HOOK] Download successful');
+      toast.success('Flight schedules downloaded successfully');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download flight schedules';
+      console.error('❌ [HOOK] Download error:', err);
+      toast.error(errorMessage);
+    }
+  }, [eventId]);
+
   useEffect(() => {
     if (eventId) {
       fetchSchedules();
@@ -102,5 +149,6 @@ export function useFlightSchedules({ eventId }: UseFlightSchedulesProps) {
     error,
     fetchSchedules,
     uploadSchedules,
+    downloadSchedules,
   };
 } 

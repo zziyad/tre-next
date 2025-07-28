@@ -56,3 +56,20 @@
 
     Refer to MDN Web Docs for HTML and CSS best practices and to the W3C guidelines for accessibility standards.
     
+---
+
+## Responsive Container Standard (2024)
+
+- All main content must be wrapped in the shared `Container` component (`src/components/layout/Container.tsx`).
+- The Container applies:
+  - `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full` for responsive, consistent sizing and padding.
+  - Mobile-first layout, scaling up to desktop.
+- Do not use custom paddings/margins for page-level content—use the Container instead.
+- This ensures:
+  - Consistent, professional appearance
+  - Proper alignment and spacing on all devices
+  - Simplified responsive design
+- See UI documentation for usage examples.
+
+---
+    

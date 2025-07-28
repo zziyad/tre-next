@@ -7,7 +7,7 @@ export interface IFlightScheduleRepository {
   createMany(data: FlightScheduleCreate[]): Promise<FlightSchedule[]>;
   findByEventId(eventId: number): Promise<FlightSchedule[]>;
   findById(flightId: number): Promise<FlightSchedule | null>;
-  update(flightId: number, data: Partial<FlightScheduleCreate>): Promise<FlightSchedule>;
+  update(flightId: number, data: Partial<FlightScheduleCreate> & { status?: string }): Promise<FlightSchedule>;
   delete(flightId: number): Promise<FlightSchedule>;
   deleteByEventId(eventId: number): Promise<{ count: number }>;
 }
@@ -109,7 +109,7 @@ export class FlightScheduleRepository implements IFlightScheduleRepository {
     }
   }
 
-  async update(flightId: number, data: Partial<FlightScheduleCreate>): Promise<FlightSchedule> {
+  async update(flightId: number, data: Partial<FlightScheduleCreate> & { status?: string }): Promise<FlightSchedule> {
     try {
       const updateData: any = {};
       
@@ -121,6 +121,7 @@ export class FlightScheduleRepository implements IFlightScheduleRepository {
       if (data.vehicle_standby_arrival_time) updateData.vehicle_standby_arrival_time = new Date(data.vehicle_standby_arrival_time);
       if (data.departure_time) updateData.departure_time = new Date(data.departure_time);
       if (data.vehicle_standby_departure_time) updateData.vehicle_standby_departure_time = new Date(data.vehicle_standby_departure_time);
+      if (data.status) updateData.status = data.status;
 
       return await prisma.flightSchedule.update({
         where: {

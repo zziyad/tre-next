@@ -117,3 +117,33 @@
     Stay updated with the latest responsive design techniques and browser capabilities.
     Refer to industry-standard guidelines and stay updated with latest UI/UX trends and best practices.
     
+---
+
+## Layout & Container Standard (2024)
+
+- All main content must be wrapped in the `Container` component (`src/components/layout/Container.tsx`).
+- The Container enforces:
+  - `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full` for consistent sizing and horizontal padding.
+  - Mobile-first, responsive design (scales up from mobile to desktop).
+- All layouts (e.g., `DefaultLayout`) and standalone pages must use the Container for visual consistency.
+- Do not use custom paddings/margins for page-level content—use the Container instead.
+- This ensures:
+  - Professional, consistent look across all pages
+  - Proper alignment and spacing on all devices
+  - Easy maintenance and scalability
+- Example usage:
+
+```tsx
+import { Container } from '@/components/layout'
+
+export default function MyPage() {
+  return (
+    <Container>
+      {/* Page content here */}
+    </Container>
+  )
+}
+```
+
+---
+    

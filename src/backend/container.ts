@@ -5,11 +5,13 @@ import { FletRepository } from './repositories/flet.repository'
 import { HotelRepository } from './repositories/hotel.repository'
 import { DestinationRepository } from './repositories/destination.repository'
 import { FlightScheduleRepository } from './repositories/flight-schedule.repository'
+import { DocumentRepository } from './repositories/document.repository'
 
 import { AuthService } from './services/auth.service'
 import { EventService } from './services/event.service'
 import { SessionService } from './services/session.service'
 import { FlightScheduleService } from './services/flight-schedule.service'
+import { DocumentService } from './services/document.service'
 
 // Repository instances
 const userRepository = new UserRepository()
@@ -18,6 +20,7 @@ const fletRepository = new FletRepository()
 const hotelRepository = new HotelRepository()
 const destinationRepository = new DestinationRepository()
 const flightScheduleRepository = new FlightScheduleRepository()
+const documentRepository = new DocumentRepository()
 
 // Service instances
 const sessionService = new SessionService()
@@ -29,6 +32,7 @@ const eventService = new EventService(
 	destinationRepository
 )
 const flightScheduleService = new FlightScheduleService(flightScheduleRepository)
+const documentService = new DocumentService(documentRepository)
 
 // Export container with all services
 export const container = {
@@ -39,12 +43,14 @@ export const container = {
 	hotelRepository,
 	destinationRepository,
 	flightScheduleRepository,
+	documentRepository,
 
 	// Services
 	authService,
 	eventService,
 	sessionService,
-	flightScheduleService
+	flightScheduleService,
+	documentService
 } as const
 
 // Type for the container

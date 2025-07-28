@@ -6,7 +6,7 @@ export interface IFlightScheduleService {
   createFlightSchedule(data: FlightScheduleCreate): Promise<FlightSchedule>;
   getFlightSchedulesByEventId(eventId: number): Promise<FlightSchedule[]>;
   getFlightScheduleById(flightId: number): Promise<FlightSchedule | null>;
-  updateFlightSchedule(flightId: number, data: Partial<FlightScheduleCreate>): Promise<FlightSchedule>;
+  updateFlightSchedule(flightId: number, data: Partial<FlightScheduleCreate> & { status?: string }): Promise<FlightSchedule>;
   deleteFlightSchedule(flightId: number): Promise<FlightSchedule>;
   uploadFlightSchedules(eventId: number, fileBuffer: Buffer): Promise<FlightScheduleUploadResponse>;
 }
@@ -43,7 +43,7 @@ export class FlightScheduleService implements IFlightScheduleService {
     }
   }
 
-  async updateFlightSchedule(flightId: number, data: Partial<FlightScheduleCreate>): Promise<FlightSchedule> {
+  async updateFlightSchedule(flightId: number, data: Partial<FlightScheduleCreate> & { status?: string }): Promise<FlightSchedule> {
     try {
       const updatedSchedule = await this.flightScheduleRepository.update(flightId, data);
       return updatedSchedule; // Return as-is since it's already a Date object
@@ -94,7 +94,7 @@ export class FlightScheduleService implements IFlightScheduleService {
       // Validate headers
       const expectedHeaders = [
         'First Name', 'Last Name', 'Flight Number', 'Arrival Date', 'Arrival Time',
-        'Property Name', 'Vehicle Standby', 'Departure Date', 'Departure Time', 'Vehicle Standby'
+        'Property Name', 'Vehicle Standby Arrival', 'Departure Date', 'Departure Time', 'Vehicle Standby Departure'
       ];
 
       console.log('🔍 [SERVICE] Expected headers:', expectedHeaders);

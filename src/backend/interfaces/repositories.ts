@@ -73,4 +73,21 @@ export interface IRealTimeStatusRepository extends IBaseRepository<RealTimeStatu
 	findByEventId(eventId: number): Promise<RealTimeStatus[]>
 	findByStatus(status: string): Promise<RealTimeStatus[]>
 	updateStatus(statusId: number, status: string): Promise<RealTimeStatus | null>
+}
+
+// Document repository interface
+export interface DocumentRepositoryInterface {
+	create(data: {
+		event_id: number
+		name: string
+		original_name: string
+		file_path: string
+		file_size: number
+		mime_type: string
+		uploaded_by: number
+	}): Promise<any>
+	findByEventId(eventId: number): Promise<any[]>
+	findById(documentId: number): Promise<any | null>
+	delete(documentId: number): Promise<any>
+	update(documentId: number, data: { name?: string }): Promise<any>
 } 

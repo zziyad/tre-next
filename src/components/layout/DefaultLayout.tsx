@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
+import { Container } from './Container'
 
 interface DefaultLayoutProps {
   children: React.ReactNode;
@@ -34,14 +35,30 @@ export function DefaultLayout({
   showSidebar = true,
   showMenuToggle = true
 }: DefaultLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Persist sidebar state in localStorage
+  useEffect(() => {
+    // On mount, read from localStorage
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('sidebarOpen') : null;
+    if (stored !== null) {
+      setSidebarOpen(stored === 'true');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Update localStorage when sidebarOpen changes
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarOpen', sidebarOpen ? 'true' : 'false');
+    }
+  }, [sidebarOpen]);
 
   const handleMenuToggle = () => {
-    setSidebarOpen(!sidebarOpen);
+    setSidebarOpen((prev) => !prev);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-background">
       {/* Navbar */}
       <Navbar
         title={title}
@@ -64,26 +81,11 @@ export function DefaultLayout({
         )}
 
         {/* Main Content */}
-        <div className="flex-1 p-4 lg:p-8">
-          {/* Desktop Sidebar Toggle */}
-          {showSidebar && showMenuToggle && (
-            <div className="mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden lg:flex hover:bg-gray-50"
-                onClick={handleMenuToggle}
-              >
-                <Menu className="h-4 w-4 mr-2" />
-                {sidebarOpen ? 'Hide Menu' : 'Show Menu'}
-              </Button>
-            </div>
-          )}
-
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
           {/* Page Content */}
-          <div className="max-w-7xl mx-auto">
+          <Container>
             {children}
-          </div>
+          </Container>
         </div>
       </div>
     </div>

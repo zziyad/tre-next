@@ -162,6 +162,27 @@ export interface RealTimeStatus {
 	updated_at: Date
 }
 
+// Document types
+export interface Document {
+	document_id: number
+	event_id: number
+	name: string
+	original_name: string
+	file_path: string
+	file_size: number
+	mime_type: string
+	uploaded_by: number
+	created_at: Date
+	user: {
+		username: string
+	}
+}
+
+export interface CreateDocumentDto {
+	file: File
+	name?: string
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
 	success: boolean
