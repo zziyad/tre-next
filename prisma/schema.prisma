@@ -111,8 +111,15 @@ model TransportReport {
   event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
   user_id      Int
   user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  question     String   @db.Text
-  answer       String   @db.Text
+  name         String   @db.VarChar(255)
+  surname      String   @db.VarChar(255)
+  email        String   @db.VarChar(255)
+  report_date  DateTime
+  tasks_completed String? @db.Text
+  meetings_attended String? @db.Text
+  issues_encountered String? @db.Text
+  pending_tasks String? @db.Text
+  support_notes String? @db.Text
   status       String   @default("pending") @db.VarChar(50)
   submitted_at DateTime @default(now())
   @@index([event_id])
@@ -128,7 +135,8 @@ model RealTimeStatus {
   hotel_name   String   @db.VarChar(255)
   destination  String   @db.VarChar(255)
   guest_name   String?  @db.VarChar(255)
-  status       String   @default("pending") @db.VarChar(50)
+  status       String   @default("dispatched") @db.VarChar(50)
+  color        String   @default("green") @db.VarChar(20)
   updated_at   DateTime @default(now())
   @@index([event_id])
   @@index([status])

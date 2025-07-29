@@ -56,7 +56,7 @@ export default function EventDashboardPage() {
   const sidebarItems = [
     { icon: BarChart3, label: 'Dashboard', active: true, href: `/events/${eventId}` },
     { icon: Calendar, label: 'Flight Schedule', active: false, href: `/events/${eventId}/flight-schedules` },
-    { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/reports` },
+    { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/transport-reports` },
     { icon: Clock, label: 'Real-time Status', active: false, href: `/events/${eventId}/status` },
     { icon: Users, label: 'Passengers', active: false, href: `/events/${eventId}/passengers` },
     { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` },

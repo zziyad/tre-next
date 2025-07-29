@@ -144,10 +144,37 @@ export interface TransportReport {
 	report_id: number
 	event_id: number
 	user_id: number
-	question: string
-	answer: string
+	name: string
+	surname: string
+	email: string
+	report_date: Date
+	tasks_completed?: string
+	meetings_attended?: string
+	issues_encountered?: string
+	pending_tasks?: string
+	support_notes?: string
 	status: string
 	submitted_at: Date
+	user?: {
+		username: string
+	}
+	event?: {
+		name: string
+	}
+}
+
+export interface CreateTransportReportDto {
+	eventId: number
+	userId: number
+	name: string
+	surname: string
+	email: string
+	reportDate: Date
+	tasksCompleted?: string
+	meetingsAttended?: string
+	issuesEncountered?: string
+	pendingTasks?: string
+	supportNotes?: string
 }
 
 // Real-time status types
@@ -159,6 +186,7 @@ export interface RealTimeStatus {
 	destination: string
 	guest_name?: string
 	status: string
+	color: string
 	updated_at: Date
 }
 

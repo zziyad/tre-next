@@ -94,12 +94,13 @@ export const createTransportReportSchema = z.object({
 
 // Real-time status validation schemas
 export const createRealTimeStatusSchema = z.object({
-	event_id: z.number().positive('Event ID must be positive'),
-	vehicle_code: z.string().min(1, 'Vehicle code is required'),
-	hotel_name: z.string().min(1, 'Hotel name is required'),
+	eventId: z.number().positive('Event ID must be positive'),
+	vehicleCode: z.string().min(1, 'Vehicle code is required'),
+	hotelName: z.string().min(1, 'Hotel name is required'),
 	destination: z.string().min(1, 'Destination is required'),
-	guest_name: z.string().optional(),
-	status: z.string().default('pending')
+	guestName: z.string().optional(),
+	status: z.string().default('dispatched'),
+	color: z.string().default('green')
 })
 
 // Document validation schemas

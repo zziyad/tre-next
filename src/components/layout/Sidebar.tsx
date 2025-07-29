@@ -33,7 +33,7 @@ export function Sidebar({ eventId, items, isOpen, onToggle }: SidebarProps) {
   const defaultItems: SidebarItem[] = [
     { icon: BarChart3, label: 'Dashboard', active: pathname === `/events/${eventId}`, href: `/events/${eventId}` },
     { icon: Calendar, label: 'Flight Schedule', active: pathname === `/events/${eventId}/flight-schedules`, href: `/events/${eventId}/flight-schedules` },
-    { icon: FileText, label: 'Transport Reports', active: pathname === `/events/${eventId}/reports`, href: `/events/${eventId}/reports` },
+            { icon: FileText, label: 'Transport Reports', active: pathname === `/events/${eventId}/transport-reports`, href: `/events/${eventId}/transport-reports` },
     { icon: Clock, label: 'Real-time Status', active: pathname === `/events/${eventId}/status`, href: `/events/${eventId}/status` },
     { icon: Users, label: 'Passengers', active: pathname === `/events/${eventId}/passengers`, href: `/events/${eventId}/passengers` },
     { icon: FileText, label: 'Documents', active: pathname === `/events/${eventId}/documents`, href: `/events/${eventId}/documents` },

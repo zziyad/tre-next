@@ -68,9 +68,12 @@ export async function GET(
     ]);
 
     return NextResponse.json({
-      flets,
-      hotels,
-      destinations,
+      success: true,
+      data: {
+        flets,
+        hotels,
+        destinations,
+      }
     });
   } catch (error) {
     console.error('Error fetching event details:', error);

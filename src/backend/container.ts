@@ -6,12 +6,14 @@ import { HotelRepository } from './repositories/hotel.repository'
 import { DestinationRepository } from './repositories/destination.repository'
 import { FlightScheduleRepository } from './repositories/flight-schedule.repository'
 import { DocumentRepository } from './repositories/document.repository'
+import { RealTimeStatusRepository } from './repositories/real-time-status.repository'
 
 import { AuthService } from './services/auth.service'
 import { EventService } from './services/event.service'
 import { SessionService } from './services/session.service'
 import { FlightScheduleService } from './services/flight-schedule.service'
 import { DocumentService } from './services/document.service'
+import { RealTimeStatusService } from './services/real-time-status.service'
 
 // Repository instances
 const userRepository = new UserRepository()
@@ -21,6 +23,7 @@ const hotelRepository = new HotelRepository()
 const destinationRepository = new DestinationRepository()
 const flightScheduleRepository = new FlightScheduleRepository()
 const documentRepository = new DocumentRepository()
+const realTimeStatusRepository = new RealTimeStatusRepository()
 
 // Service instances
 const sessionService = new SessionService()
@@ -33,6 +36,7 @@ const eventService = new EventService(
 )
 const flightScheduleService = new FlightScheduleService(flightScheduleRepository)
 const documentService = new DocumentService(documentRepository)
+const realTimeStatusService = new RealTimeStatusService(realTimeStatusRepository, authService)
 
 // Export container with all services
 export const container = {
@@ -44,13 +48,15 @@ export const container = {
 	destinationRepository,
 	flightScheduleRepository,
 	documentRepository,
+	realTimeStatusRepository,
 
 	// Services
 	authService,
 	eventService,
 	sessionService,
 	flightScheduleService,
-	documentService
+	documentService,
+	realTimeStatusService
 } as const
 
 // Type for the container
