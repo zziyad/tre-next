@@ -16,7 +16,8 @@ import {
   UserCircle,
   LogOut,
   ArrowLeft,
-  Menu
+  Menu,
+  Settings
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -53,6 +54,10 @@ export function Navbar({
     router.push('/profile');
   };
 
+  const handleSettings = () => {
+    router.push('/settings');
+  };
+
   const handleBack = () => {
     if (onBackClick) {
       onBackClick();
@@ -68,7 +73,11 @@ export function Navbar({
       <div className="px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
+            <div 
+              className="p-2 bg-primary/10 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+              onClick={() => router.push('/dashboard')}
+              title="Go to Events"
+            >
               <Plane className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
@@ -90,6 +99,8 @@ export function Navbar({
               </Button>
             )}
 
+
+
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -105,6 +116,10 @@ export function Navbar({
                 <DropdownMenuItem onClick={handleProfile}>
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

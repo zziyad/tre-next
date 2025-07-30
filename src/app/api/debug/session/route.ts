@@ -16,7 +16,9 @@ export async function GET() {
       authenticated: true,
       user: {
         user_id: user.user_id,
-        username: user.username,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
         role: user.role
       },
       message: 'Session is valid'

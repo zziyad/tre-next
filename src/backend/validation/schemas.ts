@@ -1,21 +1,36 @@
 // Validation schemas using Zod
 import { z } from 'zod'
+import { UserRole } from '@/types'
 
 // User validation schemas
 export const createUserSchema = z.object({
-	username: z.string()
-		.min(3, 'Username must be at least 3 characters')
-		.max(50, 'Username must be less than 50 characters')
-		.regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+	email: z.string()
+		.email('Invalid email format')
+		.min(1, 'Email is required')
+		.max(255, 'Email must be less than 255 characters'),
 	password: z.string()
 		.min(6, 'Password must be at least 6 characters')
 		.max(100, 'Password must be less than 100 characters'),
-	role: z.string().optional()
+	name: z.string()
+		.min(1, 'Name is required')
+		.max(100, 'Name must be less than 100 characters'),
+	surname: z.string()
+		.min(1, 'Surname is required')
+		.max(100, 'Surname must be less than 100 characters'),
+	role: z.nativeEnum(UserRole).optional().default(UserRole.USER)
 })
 
 export const loginSchema = z.object({
-	username: z.string().min(1, 'Username is required'),
+	email: z.string().email('Invalid email format').min(1, 'Email is required'),
 	password: z.string().min(1, 'Password is required')
+})
+
+export const updateUserSchema = z.object({
+	email: z.string().email('Invalid email format').optional(),
+	name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters').optional(),
+	surname: z.string().min(1, 'Surname is required').max(100, 'Surname must be less than 100 characters').optional(),
+	role: z.nativeEnum(UserRole).optional(),
+	is_active: z.boolean().optional()
 })
 
 // Event validation schemas
@@ -108,6 +123,17 @@ export const createDocumentSchema = z.object({
 	name: z.string().min(1, 'Document name is required').max(255, 'Document name must be less than 255 characters')
 })
 
+// RBAC validation schemas
+export const assignPermissionSchema = z.object({
+	userId: z.number().positive('User ID must be positive'),
+	permissionId: z.number().positive('Permission ID must be positive')
+})
+
+export const assignRolePermissionSchema = z.object({
+	roleId: z.number().positive('Role ID must be positive'),
+	permissionId: z.number().positive('Permission ID must be positive')
+})
+
 // Query parameter schemas
 export const paginationSchema = z.object({
 	page: z.string().transform(Number).pipe(z.number().min(1)).default(() => 1),
@@ -122,6 +148,7 @@ export const eventQuerySchema = z.object({
 // Export types for TypeScript
 export type CreateUserInput = z.infer<typeof createUserSchema>
 export type LoginInput = z.infer<typeof loginSchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type CreateEventInput = z.infer<typeof createEventSchema>
 export type UpdateEventInput = z.infer<typeof updateEventSchema>
 export type PaginationInput = z.infer<typeof paginationSchema>

@@ -7,6 +7,7 @@ import { DestinationRepository } from './repositories/destination.repository'
 import { FlightScheduleRepository } from './repositories/flight-schedule.repository'
 import { DocumentRepository } from './repositories/document.repository'
 import { RealTimeStatusRepository } from './repositories/real-time-status.repository'
+import { TransportReportRepository } from './repositories/transport-report.repository'
 
 import { AuthService } from './services/auth.service'
 import { EventService } from './services/event.service'
@@ -14,6 +15,8 @@ import { SessionService } from './services/session.service'
 import { FlightScheduleService } from './services/flight-schedule.service'
 import { DocumentService } from './services/document.service'
 import { RealTimeStatusService } from './services/real-time-status.service'
+import { RbacService } from './services/rbac.service'
+import { TransportReportService } from './services/transport-report.service'
 
 // Repository instances
 const userRepository = new UserRepository()
@@ -24,10 +27,12 @@ const destinationRepository = new DestinationRepository()
 const flightScheduleRepository = new FlightScheduleRepository()
 const documentRepository = new DocumentRepository()
 const realTimeStatusRepository = new RealTimeStatusRepository()
+const transportReportRepository = new TransportReportRepository()
 
 // Service instances
 const sessionService = new SessionService()
 const authService = new AuthService(userRepository, sessionService)
+const rbacService = new RbacService(userRepository)
 const eventService = new EventService(
 	eventRepository,
 	fletRepository,
@@ -37,6 +42,7 @@ const eventService = new EventService(
 const flightScheduleService = new FlightScheduleService(flightScheduleRepository)
 const documentService = new DocumentService(documentRepository)
 const realTimeStatusService = new RealTimeStatusService(realTimeStatusRepository, authService)
+const transportReportService = new TransportReportService(transportReportRepository)
 
 // Export container with all services
 export const container = {
@@ -49,14 +55,17 @@ export const container = {
 	flightScheduleRepository,
 	documentRepository,
 	realTimeStatusRepository,
+	transportReportRepository,
 
 	// Services
 	authService,
+	rbacService,
 	eventService,
 	sessionService,
 	flightScheduleService,
 	documentService,
-	realTimeStatusService
+	realTimeStatusService,
+	transportReportService
 } as const
 
 // Type for the container

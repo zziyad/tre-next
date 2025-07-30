@@ -7,6 +7,7 @@ import type {
 	UserSession,
 	ApiResponse
 } from '@/types'
+import { UserRole } from '@/types'
 import type { IAuthService, ISessionService } from '@/backend/interfaces/services'
 import type { IUserRepository } from '@/backend/interfaces/repositories'
 
@@ -19,21 +20,22 @@ export class AuthService implements IAuthService {
 	async register(userData: CreateUserDto): Promise<ApiResponse<UserSession>> {
 		try {
 			// Check if user already exists
-			const existingUser = await this.userRepository.findByUsername(userData.username)
+			const existingUser = await this.userRepository.findByEmail(userData.email)
 			if (existingUser) {
 				return {
 					success: false,
-					error: 'Username already exists'
+					error: 'Email already exists'
 				}
 			}
 
 			// Hash password
 			const hashedPassword = await this.hashPassword(userData.password)
 			
-			// Create user
+			// Create user with default role if not specified
 			const user = await this.userRepository.create({
 				...userData,
-				password: hashedPassword
+				password: hashedPassword,
+				role: userData.role || UserRole.USER
 			})
 
 			// Create session
@@ -44,8 +46,14 @@ export class AuthService implements IAuthService {
 				data: {
 					user: {
 						user_id: user.user_id,
-						username: user.username,
-						role: user.role
+						email: user.email,
+						name: user.name,
+						surname: user.surname,
+						role: user.role,
+						is_active: user.is_active,
+						last_login: user.last_login,
+						created_at: user.created_at,
+						updated_at: user.updated_at
 					},
 					token
 				}
@@ -60,12 +68,20 @@ export class AuthService implements IAuthService {
 
 	async login(credentials: LoginDto): Promise<ApiResponse<UserSession>> {
 		try {
-			// Find user by username
-			const user = await this.userRepository.findByUsername(credentials.username)
+			// Find user by email
+			const user = await this.userRepository.findByEmail(credentials.email)
 			if (!user) {
 				return {
 					success: false,
 					error: 'Invalid credentials'
+				}
+			}
+
+			// Check if user is active
+			if (!user.is_active) {
+				return {
+					success: false,
+					error: 'Account is deactivated'
 				}
 			}
 
@@ -78,6 +94,11 @@ export class AuthService implements IAuthService {
 				}
 			}
 
+			// Update last login
+			await this.userRepository.update(user.user_id, {
+				last_login: new Date()
+			} as any) // Type assertion needed due to repository interface limitation
+
 			// Create session
 			const { token } = await this.sessionService.createSession(user.user_id)
 
@@ -86,8 +107,14 @@ export class AuthService implements IAuthService {
 				data: {
 					user: {
 						user_id: user.user_id,
-						username: user.username,
-						role: user.role
+						email: user.email,
+						name: user.name,
+						surname: user.surname,
+						role: user.role,
+						is_active: user.is_active,
+						last_login: user.last_login,
+						created_at: user.created_at,
+						updated_at: user.updated_at
 					},
 					token
 				}

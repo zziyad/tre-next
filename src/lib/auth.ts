@@ -2,11 +2,14 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
+import type { UserRole } from '@/types';
 
 export interface UserData {
-  username: string;
+  email: string;
   password: string;
-  role?: string;
+  name: string;
+  surname: string;
+  role?: UserRole;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -18,15 +21,19 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createUser(userData: UserData) {
-  const { username, password, role } = userData;
+  const { email, password, name, surname, role } = userData;
   const password_hash = await hashPassword(password);
 
   const user = await prisma.user.create({
     data: {
-      username,
+      email,
       password_hash,
-      role,
+      name,
+      surname,
+      role: role || 'USER',
+      is_active: true,
       created_at: new Date(),
+      updated_at: new Date(),
     },
   });
 
@@ -63,12 +70,18 @@ export async function validateSession(token: string) {
       },
       select: {
         user_id: true,
-        username: true,
+        email: true,
+        name: true,
+        surname: true,
         role: true,
+        is_active: true,
+        last_login: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return null;
     }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionFromCookie } from '@/lib/auth'
-import { transportReportService } from '@/backend/services/transport-report.service'
+import { container } from '@/backend/container'
 import { z } from 'zod'
 
 // Validation schema for transport report
@@ -30,22 +30,32 @@ export async function POST(request: NextRequest) {
 		const validatedData = transportReportSchema.parse(body)
 		
 		// Create the transport report
-		const transportReport = await transportReportService.createReport({
+		const result = await container.transportReportService.createTransportReport({
 			...validatedData,
 			reportDate: new Date(validatedData.reportDate),
 			userId: session.user_id,
 		})
 
+		if (!result.success) {
+			return NextResponse.json(
+				{
+					success: false,
+					error: result.error,
+				},
+				{ status: 400 }
+			)
+		}
+
 		return NextResponse.json(
 			{
 				success: true,
-				data: transportReport,
+				data: result.data,
 				message: 'Transport report created successfully',
 			},
 			{ status: 201 }
 		)
 	} catch (error) {
-		console.error('Error creating transport report:', error)
+		console.error('Transport reports API: Error creating transport report:', error)
 		
 		if (error instanceof z.ZodError) {
 			return NextResponse.json(
@@ -89,14 +99,20 @@ export async function GET(request: NextRequest) {
 			)
 		}
 
-		const reports = await transportReportService.getReports(
-			parseInt(eventId),
-			userId ? parseInt(userId) : undefined
+		const result = await container.transportReportService.getTransportReports(
+			parseInt(eventId)
 		)
+
+		if (!result.success) {
+			return NextResponse.json(
+				{ error: result.error },
+				{ status: 500 }
+			)
+		}
 
 		return NextResponse.json({
 			success: true,
-			data: reports,
+			data: result.data,
 		})
 	} catch (error) {
 		console.error('Error fetching transport reports:', error)

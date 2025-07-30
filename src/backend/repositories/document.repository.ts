@@ -27,7 +27,11 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 				include: {
 					user: {
 						select: {
-							username: true
+							user_id: true,
+							email: true,
+							name: true,
+							surname: true,
+							role: true
 						}
 					}
 				}
@@ -48,7 +52,11 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 			include: {
 				user: {
 					select: {
-						username: true
+						user_id: true,
+						email: true,
+						name: true,
+						surname: true,
+						role: true
 					}
 				}
 			},
@@ -62,7 +70,11 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 			include: {
 				user: {
 					select: {
-						username: true
+						user_id: true,
+						email: true,
+						name: true,
+						surname: true,
+						role: true
 					}
 				}
 			}

@@ -20,6 +20,7 @@ export class ApiService {
 					'Content-Type': 'application/json',
 					...options.headers
 				},
+				credentials: 'include', // Include cookies in requests
 				...options
 			}
 

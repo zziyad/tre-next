@@ -16,8 +16,14 @@ export async function GET(request: Request) {
 			data: {
       user: {
 					user_id: user.user_id,
-        username: user.username,
-        role: user.role
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        role: user.role,
+        is_active: user.is_active,
+        last_login: user.last_login,
+        created_at: user.created_at,
+        updated_at: user.updated_at
       }
 			}
 		})

@@ -11,6 +11,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Define user roles enum
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  USER
+}
+
+// Define permissions enum
+enum Permission {
+  // User management
+  CREATE_USER
+  READ_USER
+  UPDATE_USER
+  DELETE_USER
+  
+  // Event management
+  CREATE_EVENT
+  READ_EVENT
+  UPDATE_EVENT
+  DELETE_EVENT
+  
+  // Flight schedule management
+  CREATE_FLIGHT_SCHEDULE
+  READ_FLIGHT_SCHEDULE
+  UPDATE_FLIGHT_SCHEDULE
+  DELETE_FLIGHT_SCHEDULE
+  UPLOAD_FLIGHT_SCHEDULE
+  
+  // Transport report management
+  CREATE_TRANSPORT_REPORT
+  READ_TRANSPORT_REPORT
+  UPDATE_TRANSPORT_REPORT
+  DELETE_TRANSPORT_REPORT
+  
+  // Real-time status management
+  CREATE_REAL_TIME_STATUS
+  READ_REAL_TIME_STATUS
+  UPDATE_REAL_TIME_STATUS
+  DELETE_REAL_TIME_STATUS
+  
+  // Document management
+  CREATE_DOCUMENT
+  READ_DOCUMENT
+  UPDATE_DOCUMENT
+  DELETE_DOCUMENT
+  UPLOAD_DOCUMENT
+  
+  // System administration
+  MANAGE_ROLES
+  MANAGE_PERMISSIONS
+  VIEW_SYSTEM_STATS
+}
+
+// Define the users model
+model User {
+  user_id      Int       @id @default(autoincrement())
+  email        String    @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  name         String    @db.VarChar(100)
+  surname      String    @db.VarChar(100)
+  role         UserRole  @default(USER)
+  is_active    Boolean   @default(true)
+  last_login   DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  
+  // Relations
+  event_users  EventUser[]
+  transport_reports TransportReport[]
+  documents Document[]
+  user_permissions UserPermission[]
+  
+  @@index([email])
+  @@index([role])
+  @@index([is_active])
+}
+
+// Define the permissions model for RBAC
+model PermissionEntity {
+  permission_id   Int        @id @default(autoincrement())
+  name            Permission @unique
+  description     String?    @db.Text
+  created_at      DateTime   @default(now())
+  
+  // Relations
+  user_permissions UserPermission[]
+  role_permissions RolePermission[]
+}
+
+// Define the roles model for RBAC
+model Role {
+  role_id        Int        @id @default(autoincrement())
+  name           String     @unique @db.VarChar(50)
+  description    String?    @db.Text
+  created_at     DateTime   @default(now())
+  
+  // Relations
+  role_permissions RolePermission[]
+}
+
+// Define the role_permissions model (many-to-many relationship)
+model RolePermission {
+  role_id       Int
+  permission_id Int
+  role          Role             @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+  permission    PermissionEntity @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade)
+  
+  @@id([role_id, permission_id])
+  @@index([role_id])
+  @@index([permission_id])
+}
+
+// Define the user_permissions model (many-to-many relationship)
+model UserPermission {
+  user_id       Int
+  permission_id Int
+  user          User             @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  permission    PermissionEntity @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade)
+  
+  @@id([user_id, permission_id])
+  @@index([user_id])
+  @@index([permission_id])
+}
+
 // Define the events model
 model Event {
   event_id    Int       @id @default(autoincrement())
@@ -26,18 +150,6 @@ model Event {
   flight_schedules FlightSchedule[]
   transport_reports TransportReport[]
   realtime_statuses RealTimeStatus[]
-  documents Document[]
-}
-
-// Define the users model
-model User {
-  user_id      Int       @id @default(autoincrement())
-  username     String    @unique @db.VarChar(100)
-  password_hash String   @db.VarChar(255)
-  role         String?   @db.VarChar(50)
-  created_at   DateTime  @default(now())
-  event_users  EventUser[]
-  transport_reports TransportReport[]
   documents Document[]
 }
 

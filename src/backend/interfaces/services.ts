@@ -1,13 +1,18 @@
-// Service layer interfaces
+// Service interfaces for business logic layer
 import type { 
 	User, 
 	CreateUserDto, 
 	LoginDto,
 	UserSession,
-	Event, 
-	CreateEventDto,
-	EventWithDetails,
-	ApiResponse
+	Permission,
+	UserRole,
+	PermissionEntity,
+	Role,
+	UserPermission,
+	RolePermission,
+	TransportReport,
+	CreateTransportReportDto,
+	ApiResponse 
 } from '@/types'
 
 // Authentication service interface
@@ -20,30 +25,34 @@ export interface IAuthService {
 	verifyPassword(password: string, hashedPassword: string): Promise<boolean>
 }
 
-// User service interface
-export interface IUserService {
-	getUserById(id: number): Promise<ApiResponse<User>>
-	getUserByUsername(username: string): Promise<ApiResponse<User>>
-	updateUser(id: number, data: Partial<CreateUserDto>): Promise<ApiResponse<User>>
-	deleteUser(id: number): Promise<ApiResponse<void>>
-	getUserEvents(userId: number): Promise<ApiResponse<Event[]>>
-}
-
-// Event service interface
-export interface IEventService {
-	createEvent(eventData: CreateEventDto, userId: number): Promise<ApiResponse<Event>>
-	getEventById(id: number): Promise<ApiResponse<Event>>
-	getEventWithDetails(id: number): Promise<ApiResponse<EventWithDetails>>
-	updateEvent(id: number, data: Partial<CreateEventDto>): Promise<ApiResponse<Event>>
-	deleteEvent(id: number): Promise<ApiResponse<void>>
-	getUserEvents(userId: number): Promise<ApiResponse<Event[]>>
-	addUserToEvent(eventId: number, userId: number): Promise<ApiResponse<void>>
-	removeUserFromEvent(eventId: number, userId: number): Promise<ApiResponse<void>>
-}
-
 // Session service interface
 export interface ISessionService {
-	createSession(userId: number): Promise<{ token: string; response: Response }>
+	createSession(userId: number): Promise<{ token: string }>
 	validateSession(token: string): Promise<User | null>
-	deleteSession(): Promise<Response>
+	deleteSession(): Promise<void>
+}
+
+// Transport Report service interface
+export interface ITransportReportService {
+	createTransportReport(data: CreateTransportReportDto): Promise<ApiResponse<TransportReport>>
+	getTransportReports(eventId: number): Promise<ApiResponse<TransportReport[]>>
+	getUserTransportReports(userId: number): Promise<ApiResponse<TransportReport[]>>
+	updateTransportReport(reportId: number, data: Partial<CreateTransportReportDto>): Promise<ApiResponse<TransportReport>>
+	deleteTransportReport(reportId: number): Promise<ApiResponse<void>>
+}
+
+// RBAC service interface
+export interface IRbacService {
+	hasPermission(userId: number, permission: Permission): Promise<boolean>
+	hasAnyPermission(userId: number, permissions: Permission[]): Promise<boolean>
+	hasAllPermissions(userId: number, permissions: Permission[]): Promise<boolean>
+	getUserPermissions(userId: number): Promise<Permission[]>
+	getRoles(): Promise<ApiResponse<Role[]>>
+	getPermissions(): Promise<ApiResponse<PermissionEntity[]>>
+	assignPermissionToUser(userId: number, permissionId: number): Promise<ApiResponse<void>>
+	removePermissionFromUser(userId: number, permissionId: number): Promise<ApiResponse<void>>
+	assignPermissionToRole(roleId: number, permissionId: number): Promise<ApiResponse<void>>
+	removePermissionFromRole(roleId: number, permissionId: number): Promise<ApiResponse<void>>
+	getDefaultPermissionsForRole(role: UserRole): Permission[]
+	initializeDefaultRolesAndPermissions(): Promise<ApiResponse<void>>
 } 

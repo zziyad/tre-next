@@ -12,7 +12,11 @@ export interface Document {
 	uploaded_by: number
 	created_at: string
 	user: {
-		username: string
+		user_id: number
+		email: string
+		name: string
+		surname: string
+		role: string
 	}
 }
 

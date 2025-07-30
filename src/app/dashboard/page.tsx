@@ -4,7 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, LogOut, Plus } from 'lucide-react';
+import { Calendar, LogOut, Plus, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import CreateEventModal from '@/components/events/CreateEventModal';
 import { useAuth } from '@/frontend/hooks/useAuth';
@@ -59,17 +59,26 @@ export default function EventsListPage() {
       showMenuToggle={false}
     >
       {/* User Info */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 w-full">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport Events</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.username}</p>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 w-full">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport Events</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.name} {user.surname}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+            <Badge variant="secondary" className="text-center">
+              {user.role || 'User'}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/settings'}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-          <Badge variant="secondary" className="text-center">
-            {user.role || 'User'}
-          </Badge>
-        </div>
-      </div>
 
       {/* Main Content */}
       <main className="w-full">

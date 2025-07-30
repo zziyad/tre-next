@@ -10,7 +10,14 @@ import type {
 	Destination,
 	FlightSchedule,
 	TransportReport,
-	RealTimeStatus
+	RealTimeStatus,
+	Permission,
+	UserRole,
+	PermissionEntity,
+	Role,
+	UserPermission,
+	RolePermission,
+	CreateTransportReportDto
 } from '@/types'
 
 // Base repository interface
@@ -24,8 +31,19 @@ export interface IBaseRepository<T, TCreate> {
 
 // User repository interface
 export interface IUserRepository extends IBaseRepository<User, CreateUserDto> {
-	findByUsername(username: string): Promise<User | null>
+	findByEmail(email: string): Promise<User | null>
 	findUserEvents(userId: number): Promise<Event[]>
+	
+	// RBAC methods
+	getUserPermissions(userId: number): Promise<UserPermission[]>
+	getRolePermissions(role: UserRole): Promise<RolePermission[]>
+	getRoles(): Promise<Role[]>
+	getPermissions(): Promise<PermissionEntity[]>
+	assignPermissionToUser(userId: number, permissionId: number): Promise<void>
+	removePermissionFromUser(userId: number, permissionId: number): Promise<void>
+	assignPermissionToRole(roleId: number, permissionId: number): Promise<void>
+	removePermissionFromRole(roleId: number, permissionId: number): Promise<void>
+	initializeDefaultRolesAndPermissions(): Promise<void>
 }
 
 // Event repository interface
@@ -62,7 +80,7 @@ export interface IFlightScheduleRepository extends IBaseRepository<FlightSchedul
 }
 
 // Transport report repository interface
-export interface ITransportReportRepository extends IBaseRepository<TransportReport, Omit<TransportReport, 'report_id' | 'submitted_at'>> {
+export interface ITransportReportRepository extends IBaseRepository<TransportReport, CreateTransportReportDto> {
 	findByEventId(eventId: number): Promise<TransportReport[]>
 	findByUserId(userId: number): Promise<TransportReport[]>
 	findByStatus(status: string): Promise<TransportReport[]>

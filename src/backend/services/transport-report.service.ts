@@ -1,140 +1,117 @@
-import { prisma } from '@/lib/prisma'
-import type { TransportReport, CreateTransportReportDto } from '@/types'
+// Transport report service implementation
+import type { 
+	TransportReport, 
+	CreateTransportReportDto, 
+	ApiResponse,
+	PaginatedResponse 
+} from '@/types'
+import type { ITransportReportService } from '@/backend/interfaces/services'
+import type { ITransportReportRepository } from '@/backend/interfaces/repositories'
 
-export interface ITransportReportService {
-	createReport(data: CreateTransportReportDto): Promise<TransportReport>
-	getReports(eventId: number, userId?: number): Promise<TransportReport[]>
-	getReport(reportId: number): Promise<TransportReport>
-	updateReportStatus(reportId: number, status: string): Promise<TransportReport>
-}
+export class TransportReportService implements ITransportReportService {
+	constructor(
+		private transportReportRepository: ITransportReportRepository
+	) {}
 
-class TransportReportService implements ITransportReportService {
-	async createReport(data: CreateTransportReportDto): Promise<TransportReport> {
-		const report = await prisma.transportReport.create({
-			data: {
-				event_id: data.eventId,
-				user_id: data.userId,
-				name: data.name,
-				surname: data.surname,
-				email: data.email,
-				report_date: data.reportDate,
-				tasks_completed: data.tasksCompleted || null,
-				meetings_attended: data.meetingsAttended || null,
-				issues_encountered: data.issuesEncountered || null,
-				pending_tasks: data.pendingTasks || null,
-				support_notes: data.supportNotes || null,
-				status: 'pending',
-			},
-			include: {
-				user: {
-					select: {
-						username: true,
-					},
-				},
-				event: {
-					select: {
-						name: true,
-					},
-				},
-			},
-		})
+	async createTransportReport(data: CreateTransportReportDto): Promise<ApiResponse<TransportReport>> {
+		try {
+			const report = await this.transportReportRepository.create(data)
 
-		return this.mapToTransportReport(report)
-	}
-
-	async getReports(eventId: number, userId?: number): Promise<TransportReport[]> {
-		const where: any = { event_id: eventId }
-		if (userId) {
-			where.user_id = userId
+			return {
+				success: true,
+				data: report
+			}
+		} catch (error) {
+			console.error('TransportReportService: Error creating transport report:', error)
+			return {
+				success: false,
+				error: 'Failed to create transport report'
+			}
 		}
-
-		const reports = await prisma.transportReport.findMany({
-			where,
-			include: {
-				user: {
-					select: {
-						username: true,
-					},
-				},
-				event: {
-					select: {
-						name: true,
-					},
-				},
-			},
-			orderBy: {
-				submitted_at: 'desc',
-			},
-		})
-
-		return reports.map(report => this.mapToTransportReport(report))
 	}
 
-	async getReport(reportId: number): Promise<TransportReport> {
-		const report = await prisma.transportReport.findUnique({
-			where: { report_id: reportId },
-			include: {
-				user: {
-					select: {
-						username: true,
-					},
-				},
-				event: {
-					select: {
-						name: true,
-					},
-				},
-			},
+	async getTransportReports(eventId: number): Promise<ApiResponse<TransportReport[]>> {
+		try {
+			const reports = await this.transportReportRepository.findByEventId(eventId)
+			return {
+				success: true,
+				data: reports
+			}
+		} catch (error) {
+			return {
+				success: false,
+				error: 'Failed to fetch transport reports'
+			}
+		}
+	}
+
+	async getUserTransportReports(userId: number): Promise<ApiResponse<TransportReport[]>> {
+		try {
+			const reports = await this.transportReportRepository.findByUserId(userId)
+			return {
+				success: true,
+				data: reports
+			}
+		} catch (error) {
+			return {
+				success: false,
+				error: 'Failed to fetch user transport reports'
+			}
+		}
+	}
+
+	async updateTransportReport(reportId: number, data: Partial<CreateTransportReportDto>): Promise<ApiResponse<TransportReport>> {
+		try {
+			const report = await this.transportReportRepository.update(reportId, {
+				...(data.name && { name: data.name }),
+				...(data.surname && { surname: data.surname }),
+				...(data.email && { email: data.email }),
+				...(data.reportDate && { report_date: data.reportDate }),
+				...(data.tasksCompleted && { tasks_completed: data.tasksCompleted }),
+				...(data.meetingsAttended && { meetings_attended: data.meetingsAttended }),
+				...(data.issuesEncountered && { issues_encountered: data.issuesEncountered }),
+				...(data.pendingTasks && { pending_tasks: data.pendingTasks }),
+				...(data.supportNotes && { support_notes: data.supportNotes })
 		})
 
 		if (!report) {
-			throw new Error('Transport report not found')
+				return {
+					success: false,
+					error: 'Transport report not found'
+				}
+			}
+
+			return {
+				success: true,
+				data: report
+			}
+		} catch (error) {
+			return {
+				success: false,
+				error: 'Failed to update transport report'
+			}
 		}
-
-		return this.mapToTransportReport(report)
 	}
 
-	async updateReportStatus(reportId: number, status: string): Promise<TransportReport> {
-		const report = await prisma.transportReport.update({
-			where: { report_id: reportId },
-			data: { status },
-			include: {
-				user: {
-					select: {
-						username: true,
-					},
-				},
-				event: {
-					select: {
-						name: true,
-					},
-				},
-			},
-		})
+	async deleteTransportReport(reportId: number): Promise<ApiResponse<void>> {
+		try {
+			const success = await this.transportReportRepository.delete(reportId)
+			if (!success) {
+				return {
+					success: false,
+					error: 'Transport report not found'
+				}
+			}
 
-		return this.mapToTransportReport(report)
-	}
-
-	private mapToTransportReport(report: any): TransportReport {
+			return {
+				success: true,
+				message: 'Transport report deleted successfully'
+			}
+		} catch (error) {
 		return {
-			report_id: report.report_id,
-			event_id: report.event_id,
-			user_id: report.user_id,
-			name: report.name,
-			surname: report.surname,
-			email: report.email,
-			report_date: report.report_date,
-			tasks_completed: report.tasks_completed,
-			meetings_attended: report.meetings_attended,
-			issues_encountered: report.issues_encountered,
-			pending_tasks: report.pending_tasks,
-			support_notes: report.support_notes,
-			status: report.status,
-			submitted_at: report.submitted_at,
-			user: report.user,
-			event: report.event,
+				success: false,
+				error: 'Failed to delete transport report'
+			}
 		}
 	}
-}
-
-export const transportReportService = new TransportReportService() 
+} 

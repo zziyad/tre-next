@@ -113,9 +113,9 @@ export default function CreateEventModal({ onEventCreated }: CreateEventModalPro
       form.reset();
       setCurrentStep(1);
       onEventCreated();
-          } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to create event';
-        toast.error(errorMessage);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create event';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

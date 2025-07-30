@@ -19,10 +19,10 @@ export async function POST(request: Request) {
 			)
     }
 
-		const { username, password } = validationResult.data
+		const { email, password } = validationResult.data
 
 		// Use service layer
-		const result = await container.authService.login({ username, password })
+		const result = await container.authService.login({ email, password })
 
 		if (!result.success) {
       return NextResponse.json(

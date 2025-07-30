@@ -1,28 +1,115 @@
 // Shared types for the TRS application
 
+// User roles enum
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  SUPERVISOR = 'SUPERVISOR',
+  USER = 'USER'
+}
+
+// Permissions enum
+export enum Permission {
+  // User management
+  CREATE_USER = 'CREATE_USER',
+  READ_USER = 'READ_USER',
+  UPDATE_USER = 'UPDATE_USER',
+  DELETE_USER = 'DELETE_USER',
+  
+  // Event management
+  CREATE_EVENT = 'CREATE_EVENT',
+  READ_EVENT = 'READ_EVENT',
+  UPDATE_EVENT = 'UPDATE_EVENT',
+  DELETE_EVENT = 'DELETE_EVENT',
+  
+  // Flight schedule management
+  CREATE_FLIGHT_SCHEDULE = 'CREATE_FLIGHT_SCHEDULE',
+  READ_FLIGHT_SCHEDULE = 'READ_FLIGHT_SCHEDULE',
+  UPDATE_FLIGHT_SCHEDULE = 'UPDATE_FLIGHT_SCHEDULE',
+  DELETE_FLIGHT_SCHEDULE = 'DELETE_FLIGHT_SCHEDULE',
+  UPLOAD_FLIGHT_SCHEDULE = 'UPLOAD_FLIGHT_SCHEDULE',
+  
+  // Transport report management
+  CREATE_TRANSPORT_REPORT = 'CREATE_TRANSPORT_REPORT',
+  READ_TRANSPORT_REPORT = 'READ_TRANSPORT_REPORT',
+  UPDATE_TRANSPORT_REPORT = 'UPDATE_TRANSPORT_REPORT',
+  DELETE_TRANSPORT_REPORT = 'DELETE_TRANSPORT_REPORT',
+  
+  // Real-time status management
+  CREATE_REAL_TIME_STATUS = 'CREATE_REAL_TIME_STATUS',
+  READ_REAL_TIME_STATUS = 'READ_REAL_TIME_STATUS',
+  UPDATE_REAL_TIME_STATUS = 'UPDATE_REAL_TIME_STATUS',
+  DELETE_REAL_TIME_STATUS = 'DELETE_REAL_TIME_STATUS',
+  
+  // Document management
+  CREATE_DOCUMENT = 'CREATE_DOCUMENT',
+  READ_DOCUMENT = 'READ_DOCUMENT',
+  UPDATE_DOCUMENT = 'UPDATE_DOCUMENT',
+  DELETE_DOCUMENT = 'DELETE_DOCUMENT',
+  UPLOAD_DOCUMENT = 'UPLOAD_DOCUMENT',
+  
+  // System administration
+  MANAGE_ROLES = 'MANAGE_ROLES',
+  MANAGE_PERMISSIONS = 'MANAGE_PERMISSIONS',
+  VIEW_SYSTEM_STATS = 'VIEW_SYSTEM_STATS'
+}
+
 // User types
 export interface User {
 	user_id: number
-	username: string
+	email: string
 	password_hash: string
-	role?: string | null
+	name: string
+	surname: string
+	role: UserRole
+	is_active: boolean
+	last_login?: Date | null
 	created_at: Date
+	updated_at: Date
 }
 
 export interface CreateUserDto {
-	username: string
+	email: string
 	password: string
-	role?: string
+	name: string
+	surname: string
+	role?: UserRole
 }
 
 export interface LoginDto {
-	username: string
+	email: string
 	password: string
 }
 
 export interface UserSession {
-	user: Omit<User, 'created_at' | 'password_hash'>
+	user: Omit<User, 'password_hash'>
 	token: string
+}
+
+// RBAC types
+export interface PermissionEntity {
+	permission_id: number
+	name: Permission
+	description?: string | null
+	created_at: Date
+}
+
+export interface Role {
+	role_id: number
+	name: string
+	description?: string | null
+	created_at: Date
+}
+
+export interface UserPermission {
+	user_id: number
+	permission_id: number
+	permission: PermissionEntity
+}
+
+export interface RolePermission {
+	role_id: number
+	permission_id: number
+	permission: PermissionEntity
 }
 
 // Event types
@@ -156,7 +243,9 @@ export interface TransportReport {
 	status: string
 	submitted_at: Date
 	user?: {
-		username: string
+		email: string
+		name: string
+		surname: string
 	}
 	event?: {
 		name: string
@@ -202,7 +291,9 @@ export interface Document {
 	uploaded_by: number
 	created_at: Date
 	user: {
-		username: string
+		email: string
+		name: string
+		surname: string
 	}
 }
 

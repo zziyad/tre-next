@@ -19,27 +19,33 @@ export async function POST(request: Request) {
 			)
     }
 
-		const userData = validationResult.data
+		const { email, password, name, surname, role } = validationResult.data
 
 		// Use service layer
-		const result = await container.authService.register(userData)
+		const result = await container.authService.register({ 
+			email, 
+			password, 
+			name, 
+			surname, 
+			role 
+		})
 
 		if (!result.success) {
       return NextResponse.json(
 				{ success: false, error: result.error },
-				{ status: result.error === 'Username already exists' ? 409 : 500 }
+        { status: 400 }
 			)
-		}
+    }
 
 		// Create session cookie
 		const { token } = await container.sessionService.createSession(result.data!.user.user_id)
-		
+
 		const response = NextResponse.json({
 			success: true,
 			data: {
 				user: result.data!.user
-			}
-		}, { status: 201 })
+      }
+		})
 
 		// Set session cookie
 		const expires = new Date()
@@ -54,8 +60,7 @@ export async function POST(request: Request) {
 		})
 
 		return response
-	} catch (error: unknown) {
-		console.error('Registration error:', error);
+  } catch (error) {
     return NextResponse.json(
 			{ success: false, error: 'Something went wrong' },
       { status: 500 }

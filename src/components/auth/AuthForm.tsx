@@ -11,38 +11,58 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/frontend/hooks/useAuth';
+import { UserRole } from '@/types';
 
 interface AuthFormProps {
   mode: 'login' | 'register';
 }
 
-const formSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
+const loginSchema = z.object({
+  email: z.string().email('Invalid email format').min(1, 'Email is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.string().optional(),
 });
+
+const registerSchema = z.object({
+  email: z.string().email('Invalid email format').min(1, 'Email is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+  surname: z.string().min(1, 'Surname is required').max(100, 'Surname must be less than 100 characters'),
+  role: z.nativeEnum(UserRole).optional().default(UserRole.USER),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const { login, register, isLoading } = useAuth();
   
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: '',
+  const form = useForm<LoginFormData | RegisterFormData>({
+    resolver: zodResolver(mode === 'login' ? loginSchema : registerSchema),
+    defaultValues: mode === 'login' ? {
+      email: '',
       password: '',
-      role: '',
+    } : {
+      email: '',
+      password: '',
+      name: '',
+      surname: '',
+      role: UserRole.USER,
     },
   });
 
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: LoginFormData | RegisterFormData) => {
     try {
       if (mode === 'login') {
-        await login({ username: values.username, password: values.password });
+        const loginData = values as LoginFormData;
+        await login({ email: loginData.email, password: loginData.password });
       } else {
+        const registerData = values as RegisterFormData;
         await register({ 
-          username: values.username, 
-          password: values.password, 
-          role: values.role 
+          email: registerData.email, 
+          password: registerData.password,
+          name: registerData.name,
+          surname: registerData.surname,
+          role: registerData.role
         });
       }
     } catch (err: unknown) {
@@ -66,12 +86,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="username"
+              name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium">Username</FormLabel>
+                  <FormLabel className="text-sm font-medium">Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your username" className="h-11" {...field} />
+                    <Input type="email" placeholder="Enter your email" className="h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -91,27 +111,56 @@ export default function AuthForm({ mode }: AuthFormProps) {
               )}
             />
             {mode === 'register' && (
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger className="h-11">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
+                        <Input placeholder="Enter your name" className="h-11" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="surname"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Surname</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your surname" className="h-11" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Role</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                          <SelectItem value={UserRole.SUPERVISOR}>Supervisor</SelectItem>
+                          <SelectItem value={UserRole.USER}>User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
             <Button type="submit" className="w-full h-11 text-base font-medium" disabled={isLoading || form.formState.isSubmitting}>
               {isLoading || form.formState.isSubmitting ? (
