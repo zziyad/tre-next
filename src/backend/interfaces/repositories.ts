@@ -10,6 +10,7 @@ import type {
 	Destination,
 	FlightSchedule,
 	TransportReport,
+	CreateTransportReportDto,
 	RealTimeStatus
 } from '@/types'
 
@@ -62,7 +63,7 @@ export interface IFlightScheduleRepository extends IBaseRepository<FlightSchedul
 }
 
 // Transport report repository interface
-export interface ITransportReportRepository extends IBaseRepository<TransportReport, Omit<TransportReport, 'report_id' | 'submitted_at'>> {
+export interface ITransportReportRepository extends IBaseRepository<TransportReport, CreateTransportReportDto> {
 	findByEventId(eventId: number): Promise<TransportReport[]>
 	findByUserId(userId: number): Promise<TransportReport[]>
 	findByStatus(status: string): Promise<TransportReport[]>
