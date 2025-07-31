@@ -18,15 +18,6 @@ export class AuthService implements IAuthService {
 
 	async register(userData: CreateUserDto): Promise<ApiResponse<UserSession>> {
 		try {
-			// Check if user already exists
-			const existingUser = await this.userRepository.findByUsername(userData.username)
-			if (existingUser) {
-				return {
-					success: false,
-					error: 'Username already exists'
-				}
-			}
-
 			// Hash password
 			const hashedPassword = await this.hashPassword(userData.password)
 			
@@ -37,7 +28,7 @@ export class AuthService implements IAuthService {
 			})
 
 			// Create session
-			const { token } = await this.sessionService.createSession(user.user_id)
+			const { token, permissions } = await this.sessionService.createSession(user.user_id)
 
 			return {
 				success: true,
@@ -45,9 +36,11 @@ export class AuthService implements IAuthService {
 					user: {
 						user_id: user.user_id,
 						username: user.username,
-						role: user.role
+						email: user.email,
+						is_active: user.is_active
 					},
-					token
+					token,
+					permissions
 				}
 			}
 		} catch (error) {
@@ -60,8 +53,8 @@ export class AuthService implements IAuthService {
 
 	async login(credentials: LoginDto): Promise<ApiResponse<UserSession>> {
 		try {
-			// Find user by username
-			const user = await this.userRepository.findByUsername(credentials.username)
+			// Find user by email
+			const user = await this.userRepository.findByEmail(credentials.email)
 			if (!user) {
 				return {
 					success: false,
@@ -79,7 +72,7 @@ export class AuthService implements IAuthService {
 			}
 
 			// Create session
-			const { token } = await this.sessionService.createSession(user.user_id)
+			const { token, permissions } = await this.sessionService.createSession(user.user_id)
 
 			return {
 				success: true,
@@ -87,9 +80,11 @@ export class AuthService implements IAuthService {
 					user: {
 						user_id: user.user_id,
 						username: user.username,
-						role: user.role
+						email: user.email,
+						is_active: user.is_active
 					},
-					token
+					token,
+					permissions
 				}
 			}
 		} catch (error) {

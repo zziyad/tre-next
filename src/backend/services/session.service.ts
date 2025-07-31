@@ -4,8 +4,13 @@ import type { User } from '@/types'
 import type { ISessionService } from '@/backend/interfaces/services'
 
 export class SessionService implements ISessionService {
-	async createSession(userId: number): Promise<{ token: string; response: Response }> {
-		return createSession(userId)
+	async createSession(userId: number): Promise<{ token: string; response: Response; permissions: string[] }> {
+		const result = await createSession(userId)
+		return {
+			token: result.token,
+			response: result.response,
+			permissions: result.permissions
+		}
 	}
 
 	async validateSession(token: string): Promise<User | null> {
@@ -16,8 +21,9 @@ export class SessionService implements ISessionService {
 		return {
 			user_id: result.user_id,
 			username: result.username,
+			email: result.email,
 			password_hash: '', // We don't return the password hash from session validation
-			role: result.role,
+			is_active: result.is_active,
 			created_at: new Date() // This is not available from the token, but required by interface
 		}
 	}

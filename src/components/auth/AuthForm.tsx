@@ -1,133 +1,141 @@
 'use client';
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth } from '@/frontend/hooks/useAuth';
+import { Loader2, Mail, Lock } from 'lucide-react';
 
-interface AuthFormProps {
-  mode: 'login' | 'register';
+interface LoginResponse {
+  success: boolean;
+  data?: {
+    user: {
+      user_id: number;
+      username: string;
+      email: string;
+    };
+    permissions: string[];
+  };
+  error?: string;
+  message?: string;
 }
 
-const formSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.string().optional(),
-});
+export default function AuthForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-export default function AuthForm({ mode }: AuthFormProps) {
-  const { login, register, isLoading } = useAuth();
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-      role: '',
-    },
-  });
-
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+  const login = async (credentials: { email: string; password: string }) => {
+    setIsLoading(true);
     try {
-      if (mode === 'login') {
-        await login({ username: values.username, password: values.password });
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data: LoginResponse = await response.json();
+
+      if (data.success) {
+        toast.success('Login successful!');
+        router.push('/dashboard');
       } else {
-        await register({ 
-          username: values.username, 
-          password: values.password, 
-          role: values.role 
-        });
+        toast.error(data.error || 'Login failed');
       }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
-      toast.error(errorMessage);
+    } catch (error) {
+      toast.error('An error occurred during login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    await login({ email, password });
+  };
+
   return (
-    <Card className="w-full max-w-md border-0 shadow-lg sm:border sm:shadow-sm">
-      <CardHeader className="px-4 sm:px-6">
-        <CardTitle className="text-xl sm:text-2xl text-center">{mode === 'login' ? 'Sign In' : 'Create Account'}</CardTitle>
-        <CardDescription className="text-center text-sm">
-          {mode === 'login'
-            ? 'Enter your credentials to access your account'
-            : 'Create a new account to get started'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-4 sm:px-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your username" className="h-11" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter your password" className="h-11" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {mode === 'register' && (
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="h-11">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            <Button type="submit" className="w-full h-11 text-base font-medium" disabled={isLoading || form.formState.isSubmitting}>
-              {isLoading || form.formState.isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Loading...
-                </div>
-              ) : mode === 'login' ? (
-                'Sign In'
+    <div className="w-full max-w-md space-y-8">
+      <div className="text-center">
+        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          Transport Report System
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Sign in to your account
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Authentication</CardTitle>
+          <CardDescription>
+            Sign in with your email and password
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
               ) : (
-                'Create Account'
+                'Sign in'
               )}
             </Button>
           </form>
-        </Form>
-      </CardContent>
-    </Card>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            <p>
+              Don't have an account? Contact your administrator to create one.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

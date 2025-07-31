@@ -3,9 +3,9 @@ import { getSessionFromCookie } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const user = await getSessionFromCookie();
+    const session = await getSessionFromCookie();
     
-    if (!user) {
+    if (!session) {
       return NextResponse.json({
         authenticated: false,
         message: 'No valid session found'
@@ -14,11 +14,8 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: true,
-      user: {
-        user_id: user.user_id,
-        username: user.username,
-        role: user.role
-      },
+      session: session,
+      sessionKeys: Object.keys(session),
       message: 'Session is valid'
     });
   } catch (error) {

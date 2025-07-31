@@ -26,12 +26,12 @@ class TransportReportService implements ITransportReportService {
 				status: 'pending',
 			},
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true,
 					},
 				},
-				event: {
+				Event: {
 					select: {
 						name: true,
 					},
@@ -51,12 +51,12 @@ class TransportReportService implements ITransportReportService {
 		const reports = await prisma.transportReport.findMany({
 			where,
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true,
 					},
 				},
-				event: {
+				Event: {
 					select: {
 						name: true,
 					},
@@ -74,12 +74,12 @@ class TransportReportService implements ITransportReportService {
 		const report = await prisma.transportReport.findUnique({
 			where: { report_id: reportId },
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true,
 					},
 				},
-				event: {
+				Event: {
 					select: {
 						name: true,
 					},
@@ -99,12 +99,12 @@ class TransportReportService implements ITransportReportService {
 			where: { report_id: reportId },
 			data: { status },
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true,
 					},
 				},
-				event: {
+				Event: {
 					select: {
 						name: true,
 					},

@@ -9,7 +9,6 @@ import {
   BarChart3, 
   Calendar, 
   FileText, 
-  Settings,
   Users,
   Plane,
   Clock,
@@ -59,8 +58,7 @@ export default function EventDashboardPage() {
     { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/transport-reports` },
     { icon: Clock, label: 'Real-time Status', active: false, href: `/events/${eventId}/status` },
     { icon: Users, label: 'Passengers', active: false, href: `/events/${eventId}/passengers` },
-    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` },
-    { icon: Settings, label: 'Settings', active: false, href: `/events/${eventId}/settings` }
+    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` }
   ];
 
   const handleAssignUser = async () => {

@@ -76,8 +76,8 @@ export async function PUT(
 		}
 
 		const result = await container.realTimeStatusService.updateStatus(statusId, {
-			vehicleCode: validationResult.data.vehicle_code,
-			hotelName: validationResult.data.hotel_name,
+			vehicleCode: validationResult.data.vehicleCode,
+			hotelName: validationResult.data.hotelName,
 			destination: validationResult.data.destination,
 			status: validationResult.data.status,
 			color: validationResult.data.color,

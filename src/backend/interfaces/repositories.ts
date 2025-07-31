@@ -26,6 +26,7 @@ export interface IBaseRepository<T, TCreate> {
 // User repository interface
 export interface IUserRepository extends IBaseRepository<User, CreateUserDto> {
 	findByUsername(username: string): Promise<User | null>
+	findByEmail(email: string): Promise<User | null>
 	findUserEvents(userId: number): Promise<Event[]>
 }
 

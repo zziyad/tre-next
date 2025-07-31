@@ -7,10 +7,18 @@ import { Container } from '@/components/layout/Container'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Download, ArrowLeft, FileText, Calendar, User, Info } from 'lucide-react'
+import { Download, ArrowLeft, FileText, Calendar, User, Info, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatFileSize, formatDate } from '@/lib/utils'
 import { ClientOnly } from '@/components/ClientOnly'
+
+interface UserSession {
+  user_id: number;
+  username: string;
+  email: string;
+  is_active: boolean;
+  permissions: string[];
+}
 
 export default function DocumentViewerPage() {
 	const params = useParams()
@@ -21,6 +29,52 @@ export default function DocumentViewerPage() {
 	const [document, setDocument] = useState<any>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+	const [userSession, setUserSession] = useState<UserSession | null>(null)
+	const [sessionLoading, setSessionLoading] = useState(true)
+
+	// Check user permissions on component mount
+	useEffect(() => {
+		const checkUserPermissions = async () => {
+			try {
+				const response = await fetch('/api/auth/me')
+				if (!response.ok) {
+					if (response.status === 401) {
+						router.push('/login')
+						return
+					}
+					throw new Error('Failed to get user session')
+				}
+				const data = await response.json()
+				console.log('Session data received:', data) // Debug log
+				
+				if (data.success) {
+					setUserSession(data.data.user)
+					console.log('User session set:', data.data.user) // Debug log
+				} else {
+					throw new Error(data.error || 'Failed to get user session')
+				}
+			} catch (error) {
+				console.error('Error checking permissions:', error)
+				toast.error('Failed to check permissions')
+			} finally {
+				setSessionLoading(false)
+			}
+		}
+
+		checkUserPermissions()
+	}, [router])
+
+	// Check if user has required permissions with defensive checks
+	const hasReadPermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('documents:read')
+	const hasDownloadPermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('documents:download')
+
+	// Debug: Log user session and permissions
+	console.log('User session:', userSession)
+	console.log('Permissions check:', {
+		hasReadPermission,
+		hasDownloadPermission,
+		permissions: userSession?.permissions
+	})
 
 	useEffect(() => {
 		if (!eventId || !documentId) {
@@ -56,6 +110,11 @@ export default function DocumentViewerPage() {
 	}, [eventId, documentId])
 
 	const handleDownload = async () => {
+		if (!hasDownloadPermission) {
+			toast.error('You do not have permission to download documents')
+			return
+		}
+
 		if (!document) return
 		
 		try {
@@ -86,6 +145,34 @@ export default function DocumentViewerPage() {
 	}
 
 	const DocumentViewer = () => {
+		if (sessionLoading) {
+			return (
+				<div className="flex items-center justify-center min-h-[80vh]">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+						<p className="text-muted-foreground">Checking permissions...</p>
+					</div>
+				</div>
+			)
+		}
+
+		// Check if user has read permission
+		if (!hasReadPermission) {
+			return (
+				<div className="flex items-center justify-center min-h-[80vh]">
+					<div className="text-center">
+						<AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+						<h2 className="text-xl font-semibold text-red-600 mb-2">Access Denied</h2>
+						<p className="text-gray-600 mb-4">You do not have permission to view this document.</p>
+						<Button onClick={handleBack}>
+							<ArrowLeft className="w-4 h-4 mr-2" />
+							Back to Documents
+						</Button>
+					</div>
+				</div>
+			)
+		}
+
 		if (isLoading) {
 			return (
 				<div className="flex items-center justify-center min-h-[80vh]">
@@ -158,12 +245,14 @@ export default function DocumentViewerPage() {
 										<span className="text-sm text-muted-foreground">Size</span>
 										<span className="text-sm font-medium">{formatFileSize(document.file_size)}</span>
 									</div>
-									<div className="pt-4">
-										<Button onClick={handleDownload} className="w-full">
-											<Download className="w-4 h-4 mr-2" />
-											Download Document
-										</Button>
-									</div>
+									{hasDownloadPermission && (
+										<div className="pt-4">
+											<Button onClick={handleDownload} className="w-full">
+												<Download className="w-4 h-4 mr-2" />
+												Download Document
+											</Button>
+										</div>
+									)}
 								</div>
 							</SheetContent>
 						</Sheet>

@@ -7,7 +7,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 		const status = await prisma.realTimeStatus.findUnique({
 			where: { status_id: id }
 		})
-		return status
+		return status ? {
+			...status,
+			guest_name: status.guest_name || undefined
+		} : null
 	}
 
 	async create(data: Omit<RealTimeStatus, 'status_id' | 'updated_at'>): Promise<RealTimeStatus> {
@@ -23,7 +26,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 				updated_at: new Date()
 			}
 		})
-		return status
+		return {
+			...status,
+			guest_name: status.guest_name || undefined
+		}
 	}
 
 	async update(id: number, data: Partial<Omit<RealTimeStatus, 'status_id' | 'updated_at'>>): Promise<RealTimeStatus | null> {
@@ -40,7 +46,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 					updated_at: new Date()
 				}
 			})
-			return status
+			return {
+				...status,
+				guest_name: status.guest_name || undefined
+			}
 		} catch {
 			return null
 		}
@@ -61,7 +70,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 		const statuses = await prisma.realTimeStatus.findMany({
 			orderBy: { updated_at: 'desc' }
 		})
-		return statuses
+		return statuses.map(status => ({
+			...status,
+			guest_name: status.guest_name || undefined
+		}))
 	}
 
 	async findByEventId(eventId: number): Promise<RealTimeStatus[]> {
@@ -69,7 +81,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 			where: { event_id: eventId },
 			orderBy: { updated_at: 'desc' }
 		})
-		return statuses
+		return statuses.map(status => ({
+			...status,
+			guest_name: status.guest_name || undefined
+		}))
 	}
 
 	async findByStatus(status: string): Promise<RealTimeStatus[]> {
@@ -77,7 +92,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 			where: { status },
 			orderBy: { updated_at: 'desc' }
 		})
-		return statuses
+		return statuses.map(status => ({
+			...status,
+			guest_name: status.guest_name || undefined
+		}))
 	}
 
 	async updateStatus(statusId: number, status: string): Promise<RealTimeStatus | null> {
@@ -90,7 +108,10 @@ export class RealTimeStatusRepository implements IRealTimeStatusRepository {
 					updated_at: new Date()
 				}
 			})
-			return updatedStatus
+			return {
+				...updatedStatus,
+				guest_name: updatedStatus.guest_name || undefined
+			}
 		} catch {
 			return null
 		}

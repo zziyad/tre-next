@@ -18,12 +18,19 @@ export class UserRepository implements IUserRepository {
 		return user
 	}
 
+	async findByEmail(email: string): Promise<User | null> {
+		const user = await prisma.user.findUnique({
+			where: { email }
+		})
+		return user
+	}
+
 	async create(data: CreateUserDto): Promise<User> {
 		const user = await prisma.user.create({
 			data: {
 				username: data.username,
+				email: data.email,
 				password_hash: data.password, // This will be hashed by the service layer
-				role: data.role,
 				created_at: new Date()
 			}
 		})
@@ -36,8 +43,8 @@ export class UserRepository implements IUserRepository {
 				where: { user_id: id },
 				data: {
 					...(data.username && { username: data.username }),
-					...(data.password && { password_hash: data.password }),
-					...(data.role && { role: data.role })
+					...(data.email && { email: data.email }),
+					...(data.password && { password_hash: data.password })
 				}
 			})
 			return user
@@ -67,8 +74,8 @@ export class UserRepository implements IUserRepository {
 	async findUserEvents(userId: number): Promise<Event[]> {
 		const eventUsers = await prisma.eventUser.findMany({
 			where: { user_id: userId },
-			include: { event: true }
+			include: { Event: true }
 		})
-		return eventUsers.map((eu) => eu.event)
+		return eventUsers.map((eu) => eu.Event)
 	}
 } 

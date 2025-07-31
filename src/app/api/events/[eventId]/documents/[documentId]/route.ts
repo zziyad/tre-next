@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { container } from '@/backend/container'
-import { getSessionFromCookie } from '@/lib/auth'
+import { getSessionFromCookie, hasPermission } from '@/lib/auth'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -12,6 +12,12 @@ export async function DELETE(
 		const session = await getSessionFromCookie()
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to delete documents
+		const hasDeletePermission = await hasPermission(session.user_id, 'documents:delete')
+		if (!hasDeletePermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const { documentId: documentIdStr } = await params
@@ -59,6 +65,12 @@ export async function PUT(
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 		}
 
+		// Check if user has permission to edit documents
+		const hasWritePermission = await hasPermission(session.user_id, 'documents:write')
+		if (!hasWritePermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
+		}
+
 		const { documentId: documentIdStr } = await params
 		const documentId = parseInt(documentIdStr)
 		if (isNaN(documentId)) {
@@ -95,6 +107,12 @@ export async function GET(
 		const session = await getSessionFromCookie()
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to read documents
+		const hasReadPermission = await hasPermission(session.user_id, 'documents:read')
+		if (!hasReadPermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const { eventId: eventIdStr, documentId: documentIdStr } = await params

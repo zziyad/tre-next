@@ -14,9 +14,12 @@ import { ViewTransportReportModal } from './ViewTransportReportModal'
 interface TransportReportsListProps {
 	eventId: number
 	userId?: number
+	hasWritePermission?: boolean
+	hasDeletePermission?: boolean
+	hasApprovePermission?: boolean
 }
 
-export function TransportReportsList({ eventId, userId }: TransportReportsListProps) {
+export function TransportReportsList({ eventId, userId, hasWritePermission = false, hasDeletePermission = false, hasApprovePermission = false }: TransportReportsListProps) {
 	const { reports, isLoading, error, refetch } = useTransportReports(eventId, userId)
 	const [searchTerm, setSearchTerm] = useState('')
 	const [statusFilter, setStatusFilter] = useState('all')

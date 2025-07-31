@@ -1,64 +1,90 @@
-import { NextResponse } from 'next/server'
-import { container } from '@/backend/container'
-import { createUserSchema } from '@/backend/validation/schemas'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { createUser, getSessionFromCookie, requirePermission } from '@/lib/auth';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-		const body = await request.json()
-
-		// Validate input
-		const validationResult = createUserSchema.safeParse(body)
-		if (!validationResult.success) {
+    // Check if user is authenticated and has admin permissions
+    const session = await getSessionFromCookie();
+    if (!session) {
       return NextResponse.json(
-				{ 
-					success: false,
-					error: 'Invalid input', 
-					details: validationResult.error.issues 
-				},
-        { status: 400 }
-			)
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
 
-		const userData = validationResult.data
-
-		// Use service layer
-		const result = await container.authService.register(userData)
-
-		if (!result.success) {
+    // Check if user has permission to create users
+    try {
+      await requirePermission(session.user_id, 'users:write');
+    } catch (error) {
       return NextResponse.json(
-				{ success: false, error: result.error },
-				{ status: result.error === 'Username already exists' ? 409 : 500 }
-			)
-		}
+        { success: false, error: 'Insufficient permissions. Required: users:write' },
+        { status: 403 }
+      );
+    }
 
-		// Create session cookie
-		const { token } = await container.sessionService.createSession(result.data!.user.user_id)
-		
-		const response = NextResponse.json({
-			success: true,
-			data: {
-				user: result.data!.user
-			}
-		}, { status: 201 })
+    const { username, email, password } = await request.json();
 
-		// Set session cookie
-		const expires = new Date()
-		expires.setDate(expires.getDate() + 7)
-		
-		response.cookies.set('session_token', token, {
-			httpOnly: true,
-			path: '/',
-			sameSite: 'lax',
-			secure: process.env.NODE_ENV === 'production',
-			expires
-		})
+    if (!username || !email || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Username, email, and password are required' },
+        { status: 400 }
+      );
+    }
 
-		return response
-	} catch (error: unknown) {
-		console.error('Registration error:', error);
+    // Check if username or email already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { username },
+          { email },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, error: 'Username or email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Create the new user
+    const newUser = await createUser({ username, email, password });
+
+    // Log the user creation activity
+    await prisma.activityLog.create({
+      data: {
+        user_id: session.user_id,
+        action: 'user_created',
+        target_user_id: newUser.user_id,
+        details: JSON.stringify({ 
+          created_user: { username, email },
+          created_by: session.username,
+        }),
+      },
+    });
+
     return NextResponse.json(
-			{ success: false, error: 'Something went wrong' },
+      {
+        success: true,
+        data: {
+          user: {
+            user_id: newUser.user_id,
+            username: newUser.username,
+            email: newUser.email,
+            is_active: newUser.is_active,
+          },
+        },
+        message: 'User created successfully',
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('User creation error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
       { status: 500 }
-		)
+    );
   }
 } 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { container } from '@/backend/container'
-import { getSessionFromCookie } from '@/lib/auth'
+import { getSessionFromCookie, hasPermission } from '@/lib/auth'
 
 export async function POST(
 	request: NextRequest,
@@ -11,6 +11,12 @@ export async function POST(
 		console.log('Upload route: Session check:', session)
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to upload documents
+		const hasWritePermission = await hasPermission(session.user_id, 'documents:write')
+		if (!hasWritePermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const { eventId: eventIdStr } = await params

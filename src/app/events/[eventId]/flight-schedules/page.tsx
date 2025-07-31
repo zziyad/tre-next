@@ -1,24 +1,35 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Upload, FileSpreadsheet, Calendar, Plane, Building, Car } from 'lucide-react';
+import { Upload, FileSpreadsheet, Calendar, Plane, Building, Car, AlertCircle } from 'lucide-react';
 import { useFlightSchedules } from '@/frontend/hooks/useFlightSchedules';
 import { toast } from 'sonner';
 import { DefaultLayout } from '@/components/layout/DefaultLayout';
-import { BarChart3, Calendar as CalendarIcon, FileText, Clock, Users, Settings } from 'lucide-react';
+import { BarChart3, Calendar as CalendarIcon, FileText, Clock, Users } from 'lucide-react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+
+interface UserSession {
+  user_id: number;
+  username: string;
+  email: string;
+  is_active: boolean;
+  permissions: string[];
+}
 
 export default function FlightSchedulesPage() {
   const params = useParams();
+  const router = useRouter();
   const eventId = parseInt(params.eventId as string);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const {
     schedules,
@@ -29,8 +40,54 @@ export default function FlightSchedulesPage() {
     downloadSchedules,
   } = useFlightSchedules({ eventId });
 
+  // Check user permissions on component mount
+  useEffect(() => {
+    const checkUserPermissions = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/login');
+            return;
+          }
+          throw new Error('Failed to get user session');
+        }
+        const data = await response.json();
+        console.log('Session data received:', data); // Debug log
+        
+        if (data.success) {
+          setUserSession(data.data.user);
+          console.log('User session set:', data.data.user); // Debug log
+        } else {
+          throw new Error(data.error || 'Failed to get user session');
+        }
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+        toast.error('Failed to check permissions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserPermissions();
+  }, [router]);
+
+  // Check if user has required permissions with defensive checks
+  const hasReadPermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('flight_schedules:read');
+  const hasUploadPermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('flight_schedules:upload');
+  const hasDownloadPermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('flight_schedules:download');
+  const hasWritePermission = userSession && Array.isArray(userSession.permissions) && userSession.permissions.includes('flight_schedules:write');
+
   // Debug: Log raw schedules data before formatting
   console.log('Raw schedules data:', schedules)
+  console.log('User session:', userSession);
+  console.log('Permissions check:', {
+    hasReadPermission,
+    hasUploadPermission,
+    hasDownloadPermission,
+    hasWritePermission,
+    permissions: userSession?.permissions
+  });
 
   // Define sidebar items with Flight Schedule as active
   const sidebarItems = [
@@ -39,8 +96,7 @@ export default function FlightSchedulesPage() {
     { icon: FileText, label: 'Transport Reports', active: false, href: `/events/${eventId}/transport-reports` },
     { icon: Clock, label: 'Real-time Status', active: false, href: `/events/${eventId}/status` },
     { icon: Users, label: 'Passengers', active: false, href: `/events/${eventId}/passengers` },
-    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` },
-    { icon: Settings, label: 'Settings', active: false, href: `/events/${eventId}/settings` }
+    { icon: FileText, label: 'Documents', active: false, href: `/events/${eventId}/documents` }
   ];
 
   const STATUS_OPTIONS = [
@@ -64,6 +120,11 @@ export default function FlightSchedulesPage() {
   }, [schedules])
 
   const handleStatusChange = (flightId: number, newStatus: string) => {
+    if (!hasWritePermission) {
+      toast.error('You do not have permission to update flight status');
+      return;
+    }
+
     toast.custom((t) => (
       <div className="fixed left-1/2 top-1/3 z-50 -translate-x-1/2 rounded-lg bg-white shadow-lg p-6 min-w-[280px] flex flex-col items-center">
         <div className="font-medium mb-2">Change status to <span className={getStatusBadgeColor(newStatus) + ' px-2 py-1 rounded'}>{newStatus}</span>?</div>
@@ -98,37 +159,37 @@ export default function FlightSchedulesPage() {
   }
 
   const handleFileUpload = async (file: File) => {
-    if (!file) return;
-
-    // Validate file type
-    const allowedTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'application/vnd.ms-excel', // .xls
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Please upload an Excel file (.xlsx or .xls)');
+    if (!hasUploadPermission) {
+      toast.error('You do not have permission to upload flight schedules');
       return;
     }
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      toast.error('File size must be less than 10MB');
+    try {
+      await uploadSchedules(file);
+      toast.success('Flight schedule uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to upload flight schedule');
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!hasDownloadPermission) {
+      toast.error('You do not have permission to download flight schedules');
       return;
     }
 
-    await uploadSchedules(file);
+    try {
+      await downloadSchedules();
+      toast.success('Flight schedule downloaded successfully');
+    } catch (error) {
+      toast.error('Failed to download flight schedule');
+    }
   };
 
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       handleFileUpload(file);
-    }
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
   };
 
@@ -146,15 +207,14 @@ export default function FlightSchedulesPage() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      handleFileUpload(files[0]);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
     }
   };
 
   const formatDateTime = (dateTime: Date | string) => {
-    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+    const date = new Date(dateTime);
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -165,290 +225,269 @@ export default function FlightSchedulesPage() {
   };
 
   const formatTime = (dateTime: Date | string) => {
-    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+    const date = new Date(dateTime);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
-  return (
-    <DefaultLayout
-      eventId={eventId.toString()}
-      title="Flight Schedules"
-      subtitle="Upload and manage flight schedule data"
-      showBackButton={true}
-      backUrl={`/events/${eventId}`}
-      sidebarItems={sidebarItems}
-    >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 px-2 sm:px-0">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Flight Schedules</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage flight schedules and passenger information</p>
+  if (loading) {
+    return (
+      <DefaultLayout eventId={eventId.toString()} sidebarItems={sidebarItems}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p>Loading...</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={downloadSchedules}
-            disabled={isLoading || schedules.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Download Schedules
-          </Button>
-        </div>
-      </div>
+      </DefaultLayout>
+    );
+  }
 
-      {/* Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <FileSpreadsheet className="h-5 w-5" />
-            Upload Flight Schedule
-          </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Upload an Excel file with flight schedule information. The file should contain columns for First Name, Last Name, Flight Number, Arrival Date, Arrival Time, Property Name, Vehicle Standby, Departure Date, Departure Time, and Vehicle Standby.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
-              dragActive
-                ? 'border-primary bg-primary/5'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            <Upload className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
-              {isUploading ? 'Uploading...' : 'Upload Excel File'}
-            </h3>
-            <p className="text-gray-600 mb-4 text-xs sm:text-sm">
-              Drag and drop your Excel file here, or click to browse
-            </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="mb-2 w-full sm:w-auto"
-            >
-              {isUploading ? 'Uploading...' : 'Choose File'}
-            </Button>
-            <p className="text-xs text-gray-500">
-              Supports .xlsx and .xls files up to 10MB
+  // Check if user has read permission
+  if (!hasReadPermission) {
+    return (
+      <DefaultLayout eventId={eventId.toString()} sidebarItems={sidebarItems}>
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-4">
+            You do not have permission to view flight schedules.
+          </p>
+          <p className="text-sm text-gray-500">
+            Please contact your administrator to request access.
+          </p>
+        </div>
+      </DefaultLayout>
+    );
+  }
+
+  // Ensure schedules is always an array
+  const safeSchedules = Array.isArray(schedules) ? schedules : [];
+
+  return (
+    <DefaultLayout eventId={eventId.toString()} sidebarItems={sidebarItems}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Flight Schedules</h1>
+            <p className="text-gray-600 mt-2">
+              Manage flight schedules and passenger information
             </p>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileInputChange}
-            className="hidden"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Statistics */}
-      {schedules.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 my-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="text-2xl font-bold">{schedules.length}</p>
-                  <p className="text-sm text-gray-600">Total Passengers</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Plane className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {new Set(schedules.map(s => s.flight_number)).size}
-                  </p>
-                  <p className="text-sm text-gray-600">Unique Flights</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-purple-600" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {new Set(schedules.map(s => s.property_name)).size}
-                  </p>
-                  <p className="text-sm text-gray-600">Properties</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-orange-600" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {new Set(schedules.map(s => new Date(s.arrival_time).toDateString())).size}
-                  </p>
-                  <p className="text-sm text-gray-600">Travel Dates</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex gap-2">
+            {hasDownloadPermission && safeSchedules.length > 0 && (
+              <Button onClick={handleDownload} variant="outline">
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Download Schedule
+              </Button>
+            )}
+          </div>
         </div>
-      )}
 
-      {/* Flight Schedules Table/Card List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Flight Schedules</CardTitle>
-          <CardDescription>
-            {isLoading ? 'Loading schedules...' : `${schedules.length} flight schedules found`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-600">{error}</div>
-          ) : schedules.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No flight schedules found. Upload an Excel file to get started.
-            </div>
-          ) : (
-            <>
-              {/* Mobile Card List */}
-              <div className="block sm:hidden space-y-4">
-                {schedules.map((schedule) => (
-                  <div key={schedule.flight_id} className="rounded-lg border p-4 bg-gray-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-base">{`${schedule.first_name} ${schedule.last_name}`}</span>
-                      <Badge variant="outline">{schedule.flight_number}</Badge>
-                    </div>
-                    <div className="text-xs text-gray-500 mb-1">Property: {schedule.property_name}</div>
-                    <div className="flex flex-col gap-1 mb-1">
-                      <div>
-                        <span className="font-semibold">Arrival:</span> {formatDateTime(schedule.arrival_time)}
-                        <span className="ml-2 text-xs text-gray-400">Vehicle: {formatTime(schedule.vehicle_standby_arrival_time)}</span>
+        {/* Upload Section */}
+        {hasUploadPermission && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <FileSpreadsheet className="h-5 w-5" />
+                Upload Flight Schedule
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Upload an Excel file with flight schedule information. The file should contain columns for First Name, Last Name, Flight Number, Arrival Date, Arrival Time, Property Name, Vehicle Standby, Departure Date, Departure Time, and Vehicle Standby.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
+                  dragActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <Upload className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+                  {isUploading ? 'Uploading...' : 'Upload Excel File'}
+                </h3>
+                <p className="text-gray-600 mb-4 text-xs sm:text-sm">
+                  Drag and drop your Excel file here, or click to browse
+                </p>
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="mb-2 w-full sm:w-auto"
+                >
+                  {isUploading ? 'Uploading...' : 'Choose File'}
+                </Button>
+                <p className="text-xs text-gray-500">
+                  Supports .xlsx and .xls files up to 10MB
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Statistics */}
+        {safeSchedules.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 my-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-2xl font-bold">{safeSchedules.length}</p>
+                    <p className="text-sm text-gray-600">Total Passengers</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {new Set(safeSchedules.map(s => s.flight_number)).size}
+                    </p>
+                    <p className="text-sm text-gray-600">Unique Flights</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Building className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {new Set(safeSchedules.map(s => s.property_name)).size}
+                    </p>
+                    <p className="text-sm text-gray-600">Properties</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-orange-600" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {new Set(safeSchedules.map(s => new Date(s.arrival_time).toDateString())).size}
+                    </p>
+                    <p className="text-sm text-gray-600">Travel Days</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Flight Schedules List */}
+        {safeSchedules.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plane className="h-5 w-5" />
+                Flight Schedules
+              </CardTitle>
+              <CardDescription>
+                {safeSchedules.length} passenger{safeSchedules.length !== 1 ? 's' : ''} scheduled
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {localSchedules.map((schedule) => (
+                  <div key={schedule.flight_id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium">
+                            {schedule.first_name} {schedule.last_name}
+                          </h3>
+                          <Badge variant="outline" className="text-xs">
+                            {schedule.flight_number}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600">Arrival</p>
+                            <p className="font-medium">{formatDateTime(schedule.arrival_time)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Departure</p>
+                            <p className="font-medium">{formatDateTime(schedule.departure_time)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Property</p>
+                            <p className="font-medium">{schedule.property_name}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Status</p>
+                            <Badge className={getStatusBadgeColor(schedule.status)}>
+                              {schedule.status}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-semibold">Departure:</span> {formatDateTime(schedule.departure_time)}
-                        <span className="ml-2 text-xs text-gray-400">Vehicle: {formatTime(schedule.vehicle_standby_departure_time)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Car className="h-4 w-4 text-gray-500" />
-                      <span className="text-xs">Standby</span>
-                      <Badge className={getStatusBadgeColor(schedule.status) + ' ml-auto'}>
-                        <Select
-                          value={schedule.status}
-                          onValueChange={val => handleStatusChange(schedule.flight_id, val)}
-                          disabled={statusUpdating[schedule.flight_id]}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Badge>
+                      
+                      {hasWritePermission && (
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={schedule.status}
+                            onValueChange={(value) => handleStatusChange(schedule.flight_id, value)}
+                            disabled={statusUpdating[schedule.flight_id]}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-              {/* Desktop Table */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Passenger</th>
-                      <th className="text-left p-3 font-medium">Flight</th>
-                      <th className="text-left p-3 font-medium">Arrival</th>
-                      <th className="text-left p-3 font-medium">Departure</th>
-                      <th className="text-left p-3 font-medium">Property</th>
-                      <th className="text-left p-3 font-medium">Vehicle Standby (Arrival)</th>
-                      <th className="text-left p-3 font-medium">Vehicle Standby (Departure)</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedules.map((schedule) => (
-                      <tr key={schedule.flight_id} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium">{`${schedule.first_name} ${schedule.last_name}`}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="outline">{schedule.flight_number}</Badge>
-                        </td>
-                        <td className="p-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">{formatDateTime(schedule.arrival_time)}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">{formatDateTime(schedule.departure_time)}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <p className="text-sm">{schedule.property_name}</p>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <Car className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{formatTime(schedule.vehicle_standby_arrival_time)}</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <Car className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{formatTime(schedule.vehicle_standby_departure_time)}</span>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge className={getStatusBadgeColor(schedule.status)}>
-                            <Select
-                              value={schedule.status}
-                              onValueChange={val => handleStatusChange(schedule.flight_id, val)}
-                              disabled={statusUpdating[schedule.flight_id]}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {STATUS_OPTIONS.map(opt => (
-                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Plane className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Flight Schedules</h3>
+              <p className="text-gray-600 mb-4">
+                No flight schedules have been uploaded yet.
+              </p>
+              {hasUploadPermission && (
+                <p className="text-sm text-gray-500">
+                  Upload an Excel file to get started.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </DefaultLayout>
   );
 } 

@@ -15,9 +15,11 @@ import type { RealTimeStatus } from '@/types'
 
 interface RealTimeStatusListProps {
 	eventId: number
+	hasWritePermission?: boolean
+	hasDeletePermission?: boolean
 }
 
-export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
+export function RealTimeStatusList({ eventId, hasWritePermission = false, hasDeletePermission = false }: RealTimeStatusListProps) {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 	const [editingStatus, setEditingStatus] = useState<RealTimeStatus | null>(null)
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -25,6 +27,11 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 	const { statuses = [], eventData, isLoading, error, createStatus, updateStatus, deleteStatus } = useRealTimeStatus(eventId)
 
 	const handleCreateStatus = async (data: CreateRealTimeStatusData) => {
+		if (!hasWritePermission) {
+			toast.error('You do not have permission to create status entries')
+			return
+		}
+		
 		try {
 			await createStatus(data)
 			setIsCreateDialogOpen(false)
@@ -36,6 +43,11 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 	}
 
 	const handleUpdateStatus = async (data: CreateRealTimeStatusData) => {
+		if (!hasWritePermission) {
+			toast.error('You do not have permission to update status entries')
+			return
+		}
+		
 		if (!editingStatus) return
 		
 		try {
@@ -50,6 +62,11 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 	}
 
 	const handleDeleteStatus = async (statusId: number) => {
+		if (!hasDeletePermission) {
+			toast.error('You do not have permission to delete status entries')
+			return
+		}
+		
 		if (!confirm('Are you sure you want to delete this status?')) return
 		
 		try {
@@ -111,13 +128,14 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 						Track vehicle status and guest movements in real-time
 					</p>
 				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger asChild>
-						<Button>
-							<Plus className="w-4 h-4 mr-2" />
-							New Status
-						</Button>
-					</DialogTrigger>
+				{hasWritePermission && (
+					<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+						<DialogTrigger asChild>
+							<Button>
+								<Plus className="w-4 h-4 mr-2" />
+								New Status
+							</Button>
+						</DialogTrigger>
 					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
 						<DialogHeader>
 							<DialogTitle>Create New Status</DialogTitle>
@@ -131,7 +149,8 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 							onSubmit={handleCreateStatus}
 						/>
 					</DialogContent>
-				</Dialog>
+					</Dialog>
+				)}
 			</div>
 
 			{safeStatuses.length === 0 ? (
@@ -144,10 +163,12 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 						<p className="text-muted-foreground text-center mb-4">
 							No real-time status entries have been created yet.
 						</p>
-						<Button onClick={() => setIsCreateDialogOpen(true)}>
-							<Plus className="w-4 h-4 mr-2" />
-							Create First Status
-						</Button>
+						{hasWritePermission && (
+							<Button onClick={() => setIsCreateDialogOpen(true)}>
+								<Plus className="w-4 h-4 mr-2" />
+								Create First Status
+							</Button>
+						)}
 					</CardContent>
 				</Card>
 			) : (
@@ -197,34 +218,40 @@ export function RealTimeStatusList({ eventId }: RealTimeStatusListProps) {
 									)}
 								</div>
 								
-								<div className="flex justify-end space-x-2 mt-4 pt-4 border-t">
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => {
-											setEditingStatus(status)
-											setIsEditDialogOpen(true)
-										}}
-									>
-										<Edit className="w-4 h-4 mr-2" />
-										Edit
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => handleDeleteStatus(status.status_id)}
-									>
-										<Trash2 className="w-4 h-4 mr-2" />
-										Delete
-									</Button>
-								</div>
+								{(hasWritePermission || hasDeletePermission) && (
+									<div className="flex justify-end space-x-2 mt-4 pt-4 border-t">
+										{hasWritePermission && (
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													setEditingStatus(status)
+													setIsEditDialogOpen(true)
+												}}
+											>
+												<Edit className="w-4 h-4 mr-2" />
+												Edit
+											</Button>
+										)}
+										{hasDeletePermission && (
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => handleDeleteStatus(status.status_id)}
+											>
+												<Trash2 className="w-4 h-4 mr-2" />
+												Delete
+											</Button>
+										)}
+									</div>
+								)}
 							</CardContent>
 						</Card>
 					)})}
 				</div>
 			)}
 
-			{editingStatus && (
+			{editingStatus && hasWritePermission && (
 				<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
 					<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
 						<DialogHeader>

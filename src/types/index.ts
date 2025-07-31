@@ -4,25 +4,78 @@
 export interface User {
 	user_id: number
 	username: string
+	email: string
 	password_hash: string
-	role?: string | null
+	is_active: boolean
 	created_at: Date
+	permissions?: Permission[]
 }
 
 export interface CreateUserDto {
 	username: string
+	email: string
 	password: string
-	role?: string
 }
 
 export interface LoginDto {
-	username: string
+	email: string
 	password: string
 }
 
 export interface UserSession {
 	user: Omit<User, 'created_at' | 'password_hash'>
 	token: string
+	permissions: string[]
+}
+
+// Permission types
+export interface Permission {
+	permission_id: number
+	name: string
+	description?: string | null
+	created_at: Date
+}
+
+export interface UserPermission {
+	user_id: number
+	permission_id: number
+	granted_by?: number | null
+	granted_at: Date
+	permission: Permission
+	granted_by_user?: User | null
+}
+
+export interface DefaultPermission {
+	default_permission_id: number
+	permission_id: number
+	created_at: Date
+	permission: Permission
+}
+
+// Activity log types
+export interface ActivityLog {
+	log_id: number
+	user_id: number
+	action: string
+	target_user_id?: number | null
+	details?: string | null
+	created_at: Date
+	user: User
+}
+
+// Permission management types
+export interface GrantPermissionDto {
+	user_id: number
+	permission_id: number
+}
+
+export interface RevokePermissionDto {
+	user_id: number
+	permission_id: number
+}
+
+export interface UserWithPermissions extends User {
+	user_permissions: UserPermission[]
 }
 
 // Event types

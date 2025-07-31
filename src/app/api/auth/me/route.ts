@@ -1,30 +1,34 @@
-import { NextResponse } from 'next/server'
-import { getSessionFromCookie } from '@/lib/auth'
+import { NextResponse } from 'next/server';
+import { getSessionFromCookie } from '@/lib/auth';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-		const user = await getSessionFromCookie()
-    if (!user) {
+    const session = await getSessionFromCookie();
+
+    if (!session) {
       return NextResponse.json(
-				{ success: false, error: 'Not authenticated' },
+        { success: false, error: 'Not authenticated' },
         { status: 401 }
-			)
+      );
     }
 
     return NextResponse.json({
-			success: true,
-			data: {
-      user: {
-					user_id: user.user_id,
-        username: user.username,
-        role: user.role
-      }
-			}
-		})
+      success: true,
+      data: {
+        user: {
+          user_id: session.user_id,
+          username: session.username,
+          email: session.email,
+          is_active: session.is_active,
+          permissions: session.permissions,
+        },
+      },
+    });
   } catch (error) {
+    console.error('Session validation error:', error);
     return NextResponse.json(
-			{ success: false, error: 'Something went wrong' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
-		)
+    );
   }
 } 
