@@ -11,7 +11,24 @@ async function createTestUser() {
     });
 
     if (existingUser) {
-      console.log('Test user already exists');
+      // Update existing user with email
+      const updatedUser = await prisma.user.update({
+        where: { username: 'admin' },
+        data: {
+          email: 'admin@test.com',
+          is_active: true
+        }
+      });
+      
+      console.log('Test user updated successfully:', {
+        user_id: updatedUser.user_id,
+        username: updatedUser.username,
+        email: updatedUser.email
+      });
+
+      console.log('\nLogin credentials:');
+      console.log('Email: admin@test.com');
+      console.log('Password: admin123');
       return;
     }
 
@@ -22,8 +39,9 @@ async function createTestUser() {
     const user = await prisma.user.create({
       data: {
         username: 'admin',
+        email: 'admin@test.com',
         password_hash: hashedPassword,
-        role: 'admin',
+        is_active: true,
         created_at: new Date()
       }
     });
@@ -31,11 +49,11 @@ async function createTestUser() {
     console.log('Test user created successfully:', {
       user_id: user.user_id,
       username: user.username,
-      role: user.role
+      email: user.email
     });
 
     console.log('\nLogin credentials:');
-    console.log('Username: admin');
+    console.log('Email: admin@test.com');
     console.log('Password: admin123');
   } catch (error) {
     console.error('Error creating test user:', error);

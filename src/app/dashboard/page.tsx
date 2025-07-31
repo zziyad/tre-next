@@ -1,147 +1,228 @@
 'use client';
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, LogOut, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Container } from '@/components/layout/Container';
 import { toast } from 'sonner';
+import { Loader2, Calendar, Plus, LogOut, Shield, AlertCircle } from 'lucide-react';
 import CreateEventModal from '@/components/events/CreateEventModal';
-import { useAuth } from '@/frontend/hooks/useAuth';
-import { useEvents } from '@/frontend/hooks/useEvents';
-import { DefaultLayout } from '@/components/layout/DefaultLayout';
 
-export default function EventsListPage() {
-  const { user, logout, isLoading: authLoading } = useAuth();
-  const { events, createEvent, refreshEvents, isLoading: eventsLoading, error } = useEvents();
+interface User {
+  user_id: number;
+  username: string;
+  email: string;
+  is_active: boolean;
+  permissions: string[];
+}
 
-  const handleLogout = async () => {
+interface Event {
+  event_id: number;
+  name: string;
+  start_date?: string;
+  end_date?: string;
+  description?: string;
+}
+
+interface DashboardData {
+  user: User;
+  events: Event[];
+}
+
+export default function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
     try {
-      await logout();
-    } catch (error) {
-      toast.error('Failed to logout');
+      const response = await fetch('/api/dashboard');
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/login');
+          return;
+        }
+        if (response.status === 403) {
+          const errorData = await response.json();
+          setError(errorData.error || 'Access denied');
+          return;
+        }
+        throw new Error('Failed to fetch dashboard data');
+      }
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+      } else {
+        setError(result.error || 'Failed to load dashboard');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEventClick = (eventId: number) => {
-    window.location.href = `/events/${eventId}`;
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        toast.success('Logged out successfully');
+        router.push('/login');
+      } else {
+        toast.error('Failed to logout');
+      }
+    } catch (error) {
+      toast.error('An error occurred during logout');
+    }
   };
 
   const handleEventCreated = () => {
-    refreshEvents();
+    // Refresh the dashboard data after event creation
+    fetchDashboardData();
   };
 
-  if (authLoading || eventsLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
+      <Container>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </Container>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600">Error: {error}</div>
-      </div>
+      <Container>
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">
+            Please contact your administrator to request access to the dashboard.
+          </p>
+          <Button onClick={handleLogout} className="mt-4">
+            Logout
+          </Button>
+        </div>
+      </Container>
     );
   }
 
-  return (
-    <DefaultLayout
-      title="Transport Events"
-      subtitle="Welcome back, manage your events"
-      showSidebar={false}
-      showMenuToggle={false}
-    >
-      {/* User Info */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 w-full">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transport Events</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Welcome back, {user.username}</p>
+  if (!data) {
+    return (
+      <Container>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-600 mb-4">No Data</h1>
+          <p className="text-gray-500">No dashboard data available.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-          <Badge variant="secondary" className="text-center">
-            {user.role || 'User'}
-          </Badge>
+      </Container>
+    );
+  }
+
+  const { user, events } = data;
+  const hasEventsRead = user.permissions.includes('events:read');
+  console.log({user, events, hasEventsRead});
+
+  return (
+    <Container>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.username}!</h1>
+          <p className="text-gray-600 mt-2">
+            Manage transport events and reports
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {user.permissions.includes('users:admin') && (
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin')}
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Panel
+            </Button>
+          )}
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <main className="w-full">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 lg:mb-8 gap-4 w-full">
+      {/* Events Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Your Events</h2>
-            <p className="text-gray-600 text-sm lg:text-base">Select an event to manage its details</p>
+            <CardTitle>Transport Events</CardTitle>
+            <CardDescription>
+              All transport events you have access to
+            </CardDescription>
           </div>
-          <div className="w-full sm:w-auto">
+          {user.permissions.includes('users:admin') && (
             <CreateEventModal onEventCreated={handleEventCreated} />
-          </div>
-        </div>
-
-        {events.length > 0 ? (
-          <div className="grid w-full gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
-              <Card 
-                key={event.event_id} 
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] h-full flex flex-col"
-                onClick={() => handleEventClick(event.event_id)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl">{event.name}</CardTitle>
-                    <Badge variant="outline">Active</Badge>
-                  </div>
-                  {event.description && (
-                    <CardDescription className="line-clamp-2">
-                      {event.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-end">
-                  <div className="space-y-4">
-                    {(event.start_date || event.end_date) && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {event.start_date && new Date(event.start_date).toLocaleDateString()}
-                          {event.start_date && event.end_date && ' - '}
-                          {event.end_date && new Date(event.end_date).toLocaleDateString()}
-                        </span>
-                      </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          {!hasEventsRead ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Event Access</h3>
+              <p className="text-gray-600 mb-4">
+                You don't have permission to view events. Please contact your administrator.
+              </p>
+            </div>
+          ) : events.length > 0 ? (
+            <div className="space-y-4">
+              {events.map((event) => (
+                <div key={event.event_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{event.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {event.start_date && new Date(event.start_date).toLocaleDateString()}
+                      {event.start_date && event.end_date && ' - '}
+                      {event.end_date && new Date(event.end_date).toLocaleDateString()}
+                    </p>
+                    {event.description && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {event.description}
+                      </p>
                     )}
-                    <div className="pt-2 border-t">
-                      <Button variant="ghost" size="sm" className="w-full">
-                        Open Event Dashboard →
-                      </Button>
-                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="flex justify-center items-center w-full">
-            <Card className="text-center py-12 w-full max-w-xl">
-              <CardContent>
-                <div className="mx-auto">
-                  <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-6" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No events yet</h3>
-                  <p className="text-gray-600 mb-8">
-                    Get started by creating your first transport event. You&apos;ll be able to manage 
-                    fleet markers, hotels, destinations, and more.
-                  </p>
-                  <CreateEventModal onEventCreated={handleEventCreated} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/events/${event.event_id}`)}
+                  >
+                    View Details
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </main>
-    </DefaultLayout>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No events available</h3>
+              <p className="text-gray-600 mb-4">
+                No transport events are currently available in the system.
+              </p>
+              {user.permissions.includes('users:admin') && (
+                <CreateEventModal onEventCreated={handleEventCreated} />
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Container>
   );
 } 

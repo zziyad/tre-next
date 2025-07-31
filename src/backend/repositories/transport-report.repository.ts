@@ -20,16 +20,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 		const report = await prisma.transportReport.findUnique({
 			where: { report_id: id },
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true
@@ -58,16 +56,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 				submitted_at: new Date()
 			},
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true
@@ -94,16 +90,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 					...(data.supportNotes && { support_notes: data.supportNotes })
 				},
 				include: {
-					user: {
+					User: {
 						select: {
 							user_id: true,
-							email: true,
-							name: true,
-							surname: true,
-							role: true
+							username: true,
+							email: true
 						}
 					},
-					event: {
+					Event: {
 						select: {
 							event_id: true,
 							name: true
@@ -132,16 +126,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 		const reports = await prisma.transportReport.findMany({
 			where: { event_id: eventId },
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true
@@ -157,16 +149,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 		const reports = await prisma.transportReport.findMany({
 			where: { user_id: userId },
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true
@@ -181,16 +171,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 	async findAll(): Promise<TransportReport[]> {
 		const reports = await prisma.transportReport.findMany({
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true
@@ -206,16 +194,14 @@ export class TransportReportRepository implements ITransportReportRepository {
 		const reports = await prisma.transportReport.findMany({
 			where: { status },
 			include: {
-				user: {
+				User: {
 					select: {
 						user_id: true,
-						email: true,
-						name: true,
-						surname: true,
-						role: true
+						username: true,
+						email: true
 					}
 				},
-				event: {
+				Event: {
 					select: {
 						event_id: true,
 						name: true

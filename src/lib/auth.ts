@@ -5,8 +5,8 @@ import { prisma } from './prisma';
 
 export interface UserData {
   username: string;
+  email: string;
   password: string;
-  role?: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -18,25 +18,72 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export async function createUser(userData: UserData) {
-  const { username, password, role } = userData;
+  const { username, email, password } = userData;
   const password_hash = await hashPassword(password);
+
+  // Get default permissions
+  const defaultPermissions = await prisma.defaultPermission.findMany({
+    include: {
+      Permission: true,
+    },
+  });
 
   const user = await prisma.user.create({
     data: {
       username,
+      email,
       password_hash,
-      role,
+      is_active: true,
       created_at: new Date(),
     },
   });
+
+  // Assign default permissions to the new user
+  if (defaultPermissions.length > 0) {
+    const userPermissions = defaultPermissions.map(dp => ({
+      user_id: user.user_id,
+      permission_id: dp.permission_id,
+    }));
+
+    await prisma.userPermission.createMany({
+      data: userPermissions,
+    });
+  }
 
   return { ...user, password_hash: undefined };
 }
 
 export async function createSession(userId: number) {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET!, {
-    expiresIn: '7d',
+  // Get user with permissions
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+    include: {
+      UserPermission_UserPermission_user_idToUser: {
+        include: {
+          Permission: true,
+        },
+      },
+    },
   });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const permissions = user.UserPermission_UserPermission_user_idToUser.map(up => up.Permission.name);
+
+  const token = jwt.sign(
+    { 
+      userId, 
+      permissions,
+      username: user.username,
+      email: user.email,
+    }, 
+    process.env.JWT_SECRET!, 
+    {
+      expiresIn: '7d',
+    }
+  );
 
   const expires = new Date();
   expires.setDate(expires.getDate() + 7);
@@ -50,12 +97,17 @@ export async function createSession(userId: number) {
     }
   });
 
-  return { token, response };
+  return { token, response, permissions };
 }
 
 export async function validateSession(token: string) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { 
+      userId: number;
+      permissions: string[];
+      username: string;
+      email: string;
+    };
     
     const user = await prisma.user.findUnique({
       where: {
@@ -64,15 +116,19 @@ export async function validateSession(token: string) {
       select: {
         user_id: true,
         username: true,
-        role: true,
+        email: true,
+        is_active: true,
       },
     });
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return null;
     }
 
-    return user;
+    return {
+      ...user,
+      permissions: decoded.permissions,
+    };
   } catch {
     return null;
   }
@@ -94,4 +150,36 @@ export async function deleteSession(token: string) {
   });
 
   return response;
+}
+
+// Permission checking utilities
+export async function hasPermission(userId: number, permissionName: string): Promise<boolean> {
+  const userPermission = await prisma.userPermission.findFirst({
+    where: {
+      user_id: userId,
+      Permission: {
+        name: permissionName,
+      },
+    },
+  });
+
+  return !!userPermission;
+}
+
+export async function requirePermission(userId: number, permissionName: string): Promise<void> {
+  const hasAccess = await hasPermission(userId, permissionName);
+  if (!hasAccess) {
+    throw new Error(`Insufficient permissions. Required: ${permissionName}`);
+  }
+}
+
+export async function getUserPermissions(userId: number): Promise<string[]> {
+  const userPermissions = await prisma.userPermission.findMany({
+    where: { user_id: userId },
+    include: {
+      Permission: true,
+    },
+  });
+
+  return userPermissions.map(up => up.Permission.name);
 } 

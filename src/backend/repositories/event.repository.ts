@@ -15,12 +15,12 @@ export class EventRepository implements IEventRepository {
 		const event = await prisma.event.findUnique({
 			where: { event_id: eventId },
 			include: {
-				flets: true,
-				hotels: true,
-				destinations: true,
-				flight_schedules: true,
-				transport_reports: true,
-				realtime_statuses: true
+				Flet: true,
+				Hotel: true,
+				Destination: true,
+				FlightSchedule: true,
+				TransportReport: true,
+				RealTimeStatus: true
 			}
 		})
 		return event as EventWithDetails | null
@@ -77,9 +77,9 @@ export class EventRepository implements IEventRepository {
 	async findUserEvents(userId: number): Promise<Event[]> {
 		const eventUsers = await prisma.eventUser.findMany({
 			where: { user_id: userId },
-			include: { event: true }
+			include: { Event: true }
 		})
-		return eventUsers.map((eu) => eu.event)
+		return eventUsers.map((eu) => eu.Event)
 	}
 
 	async addUserToEvent(eventId: number, userId: number): Promise<boolean> {

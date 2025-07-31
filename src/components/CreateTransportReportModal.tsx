@@ -30,9 +30,10 @@ type TransportReportFormData = z.infer<typeof transportReportSchema>
 interface CreateTransportReportModalProps {
   eventId: number
   onSuccess?: () => void
+  hasWritePermission?: boolean
 }
 
-export function CreateTransportReportModal({ eventId, onSuccess }: CreateTransportReportModalProps) {
+export function CreateTransportReportModal({ eventId, onSuccess, hasWritePermission = false }: CreateTransportReportModalProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
@@ -52,6 +53,11 @@ export function CreateTransportReportModal({ eventId, onSuccess }: CreateTranspo
   })
 
   const handleSubmit = async (values: TransportReportFormData) => {
+    if (!hasWritePermission) {
+      toast.error('You do not have permission to create transport reports')
+      return
+    }
+
     try {
       setIsSubmitting(true)
       
@@ -97,13 +103,15 @@ export function CreateTransportReportModal({ eventId, onSuccess }: CreateTranspo
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Create Report
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      {hasWritePermission && (
+        <>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Create Report
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -293,6 +301,8 @@ export function CreateTransportReportModal({ eventId, onSuccess }: CreateTranspo
           </form>
         </Form>
       </DialogContent>
+        </>
+      )}
     </Dialog>
   )
 } 

@@ -1,136 +1,144 @@
-// This is your Prisma schema file
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// Define the datasource for PostgreSQL
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Define the events model
+model ActivityLog {
+  log_id         Int      @id @default(autoincrement())
+  user_id        Int
+  action         String   @db.VarChar(100)
+  target_user_id Int?
+  details        String?
+  created_at     DateTime @default(now())
+  User           User     @relation(fields: [user_id], references: [user_id])
+
+  @@index([action])
+  @@index([created_at])
+  @@index([user_id])
+}
+
+model DefaultPermission {
+  default_permission_id Int        @id @default(autoincrement())
+  permission_id         Int        @unique
+  created_at            DateTime   @default(now())
+  Permission            Permission @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade)
+
+  @@index([permission_id])
+}
+
+model Destination {
+  destination_id Int      @id @default(autoincrement())
+  event_id       Int
+  name           String   @db.VarChar(255)
+  description    String?
+  created_at     DateTime @default(now())
+  Event          Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
+  @@index([event_id])
+}
+
+model Document {
+  document_id   Int      @id @default(autoincrement())
+  event_id      Int
+  name          String   @db.VarChar(255)
+  original_name String   @db.VarChar(255)
+  file_path     String
+  file_size     Int
+  mime_type     String   @db.VarChar(100)
+  uploaded_by   Int
+  created_at    DateTime @default(now())
+  Event         Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  User          User     @relation(fields: [uploaded_by], references: [user_id], onDelete: Cascade)
+
+  @@index([event_id])
+  @@index([uploaded_by])
+}
+
 model Event {
-  event_id    Int       @id @default(autoincrement())
-  name        String    @db.VarChar(255)
-  start_date  DateTime? @db.Date
-  end_date    DateTime? @db.Date
-  description String?   @db.Text
-  created_at  DateTime  @default(now())
-  event_users EventUser[]
-  flets       Flet[]
-  hotels      Hotel[]
-  destinations Destination[]
-  flight_schedules FlightSchedule[]
-  transport_reports TransportReport[]
-  realtime_statuses RealTimeStatus[]
-  documents Document[]
+  event_id        Int               @id @default(autoincrement())
+  name            String            @db.VarChar(255)
+  start_date      DateTime?         @db.Date
+  end_date        DateTime?         @db.Date
+  description     String?
+  created_at      DateTime          @default(now())
+  Destination     Destination[]
+  Document        Document[]
+  EventUser       EventUser[]
+  Flet            Flet[]
+  FlightSchedule  FlightSchedule[]
+  Hotel           Hotel[]
+  RealTimeStatus  RealTimeStatus[]
+  TransportReport TransportReport[]
 }
 
-// Define the users model
-model User {
-  user_id      Int       @id @default(autoincrement())
-  username     String    @unique @db.VarChar(100)
-  password_hash String   @db.VarChar(255)
-  role         String?   @db.VarChar(50)
-  created_at   DateTime  @default(now())
-  event_users  EventUser[]
-  transport_reports TransportReport[]
-  documents Document[]
-}
-
-// Define the event_users model (many-to-many relationship)
 model EventUser {
-  event_id  Int
-  user_id   Int
-  event     Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  user      User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  event_id Int
+  user_id  Int
+  Event    Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  User     User  @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
   @@id([event_id, user_id])
   @@index([event_id])
   @@index([user_id])
 }
 
-// Define the flet model (transport markers)
 model Flet {
   flet_id     Int      @id @default(autoincrement())
   event_id    Int
-  event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
   name        String   @db.VarChar(255)
-  description String?  @db.Text
+  description String?
   created_at  DateTime @default(now())
+  Event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
   @@index([event_id])
 }
 
-// Define the hotel model
-model Hotel {
-  hotel_id    Int      @id @default(autoincrement())
-  event_id    Int
-  event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  created_at  DateTime @default(now())
-  @@index([event_id])
-}
-
-// Define the destination model
-model Destination {
-  destination_id Int      @id @default(autoincrement())
-  event_id       Int
-  event          Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  name           String   @db.VarChar(255)
-  description    String?  @db.Text
-  created_at     DateTime @default(now())
-  @@index([event_id])
-}
-
-// Define the flight_schedule model
 model FlightSchedule {
-  flight_id                   Int      @id @default(autoincrement())
-  event_id                    Int
-  event                       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  first_name                  String   @db.VarChar(255)
-  last_name                   String   @db.VarChar(255)
-  flight_number               String   @db.VarChar(50)
-  arrival_time                DateTime
-  property_name               String   @db.VarChar(255)
-  vehicle_standby_arrival_time DateTime
-  departure_time              DateTime
+  flight_id                      Int      @id @default(autoincrement())
+  event_id                       Int
+  first_name                     String   @db.VarChar(255)
+  last_name                      String   @db.VarChar(255)
+  flight_number                  String   @db.VarChar(50)
+  arrival_time                   DateTime
+  property_name                  String   @db.VarChar(255)
+  vehicle_standby_arrival_time   DateTime
+  departure_time                 DateTime
   vehicle_standby_departure_time DateTime
-  status                      String   @default("pending") @db.VarChar(50)
-  created_at                  DateTime @default(now())
+  status                         String   @default("pending") @db.VarChar(50)
+  created_at                     DateTime @default(now())
+  Event                          Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
   @@index([event_id])
   @@index([status])
 }
 
-// Define the transport_report model
-model TransportReport {
-  report_id    Int      @id @default(autoincrement())
-  event_id     Int
-  event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  user_id      Int
-  user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  name         String   @db.VarChar(255)
-  surname      String   @db.VarChar(255)
-  email        String   @db.VarChar(255)
-  report_date  DateTime
-  tasks_completed String? @db.Text
-  meetings_attended String? @db.Text
-  issues_encountered String? @db.Text
-  pending_tasks String? @db.Text
-  support_notes String? @db.Text
-  status       String   @default("pending") @db.VarChar(50)
-  submitted_at DateTime @default(now())
+model Hotel {
+  hotel_id    Int      @id @default(autoincrement())
+  event_id    Int
+  name        String   @db.VarChar(255)
+  description String?
+  created_at  DateTime @default(now())
+  Event       Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
   @@index([event_id])
-  @@index([user_id])
 }
 
-// Define the realtime_status model
+model Permission {
+  permission_id     Int                @id @default(autoincrement())
+  name              String             @unique @db.VarChar(100)
+  description       String?
+  created_at        DateTime           @default(now())
+  DefaultPermission DefaultPermission?
+  UserPermission    UserPermission[]
+}
+
 model RealTimeStatus {
   status_id    Int      @id @default(autoincrement())
   event_id     Int
-  event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
   vehicle_code String   @db.VarChar(50)
   hotel_name   String   @db.VarChar(255)
   destination  String   @db.VarChar(255)
@@ -138,23 +146,59 @@ model RealTimeStatus {
   status       String   @default("dispatched") @db.VarChar(50)
   color        String   @default("green") @db.VarChar(20)
   updated_at   DateTime @default(now())
+  Event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+
   @@index([event_id])
   @@index([status])
 }
 
-// Define the document model
-model Document {
-  document_id  Int      @id @default(autoincrement())
-  event_id     Int
-  event        Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  name         String   @db.VarChar(255)
-  original_name String  @db.VarChar(255)
-  file_path    String   @db.Text
-  file_size    Int
-  mime_type    String   @db.VarChar(100)
-  uploaded_by  Int
-  user         User     @relation(fields: [uploaded_by], references: [user_id], onDelete: Cascade)
-  created_at   DateTime @default(now())
+model TransportReport {
+  report_id          Int      @id @default(autoincrement())
+  event_id           Int
+  user_id            Int
+  status             String   @default("pending") @db.VarChar(50)
+  submitted_at       DateTime @default(now())
+  email              String   @db.VarChar(255)
+  issues_encountered String?
+  meetings_attended  String?
+  name               String   @db.VarChar(255)
+  pending_tasks      String?
+  report_date        DateTime
+  support_notes      String?
+  surname            String   @db.VarChar(255)
+  tasks_completed    String?
+  Event              Event    @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
+  User               User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
   @@index([event_id])
-  @@index([uploaded_by])
+  @@index([user_id])
+}
+
+model User {
+  user_id                                        Int               @id @default(autoincrement())
+  username                                       String            @unique @db.VarChar(100)
+  password_hash                                  String            @db.VarChar(255)
+  created_at                                     DateTime          @default(now())
+  email                                          String            @unique @db.VarChar(255)
+  is_active                                      Boolean           @default(true)
+  ActivityLog                                    ActivityLog[]
+  Document                                       Document[]
+  EventUser                                      EventUser[]
+  TransportReport                                TransportReport[]
+  UserPermission_UserPermission_granted_byToUser UserPermission[]  @relation("UserPermission_granted_byToUser")
+  UserPermission_UserPermission_user_idToUser    UserPermission[]  @relation("UserPermission_user_idToUser")
+}
+
+model UserPermission {
+  user_id                              Int
+  permission_id                        Int
+  granted_by                           Int?
+  granted_at                           DateTime   @default(now())
+  User_UserPermission_granted_byToUser User?      @relation("UserPermission_granted_byToUser", fields: [granted_by], references: [user_id])
+  Permission                           Permission @relation(fields: [permission_id], references: [permission_id], onDelete: Cascade)
+  User_UserPermission_user_idToUser    User       @relation("UserPermission_user_idToUser", fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@id([user_id, permission_id])
+  @@index([permission_id])
+  @@index([user_id])
 }

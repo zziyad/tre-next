@@ -1,63 +1,87 @@
-import { NextResponse } from 'next/server'
-import { container } from '@/backend/container'
-import { loginSchema } from '@/backend/validation/schemas'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { verifyPassword, createSession } from '@/lib/auth';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-		const body = await request.json()
+    const { email, password } = await request.json();
 
-		// Validate input
-		const validationResult = loginSchema.safeParse(body)
-		if (!validationResult.success) {
+    if (!email || !password) {
       return NextResponse.json(
-				{ 
-					success: false,
-					error: 'Invalid input', 
-					details: validationResult.error.issues 
-				},
+        { success: false, error: 'Email and password are required' },
         { status: 400 }
-			)
+      );
     }
 
-		const { username, password } = validationResult.data
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        UserPermission_UserPermission_user_idToUser: {
+          include: {
+            Permission: true,
+          },
+        },
+      },
+    });
 
-		// Use service layer
-		const result = await container.authService.login({ username, password })
-
-		if (!result.success) {
+    if (!user) {
       return NextResponse.json(
-				{ success: false, error: result.error },
+        { success: false, error: 'Invalid email or password' },
         { status: 401 }
-			)
+      );
     }
 
-		// Create session cookie
-		const { token } = await container.sessionService.createSession(result.data!.user.user_id)
+    if (!user.is_active) {
+      return NextResponse.json(
+        { success: false, error: 'Account is deactivated' },
+        { status: 401 }
+      );
+    }
 
-		const response = NextResponse.json({
-			success: true,
-			data: {
-				user: result.data!.user
-      }
-		})
+    const isValidPassword = await verifyPassword(password, user.password_hash);
 
-		// Set session cookie
-		const expires = new Date()
-		expires.setDate(expires.getDate() + 7)
-		
-		response.cookies.set('session_token', token, {
-			httpOnly: true,
-			path: '/',
-			sameSite: 'lax',
-			secure: process.env.NODE_ENV === 'production',
-			expires
-		})
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
 
-		return response
-  } catch (error) {
+    const { token, response, permissions } = await createSession(user.user_id);
+
+    // Log the login activity
+    await prisma.activityLog.create({
+      data: {
+        user_id: user.user_id,
+        action: 'user_login',
+        details: JSON.stringify({ email: user.email }),
+      },
+    });
+
     return NextResponse.json(
-			{ success: false, error: 'Something went wrong' },
+      {
+        success: true,
+        data: {
+          user: {
+            user_id: user.user_id,
+            username: user.username,
+            email: user.email,
+          },
+          permissions,
+        },
+        message: 'Login successful',
+      },
+      {
+        status: 200,
+        headers: response.headers,
+      }
+    );
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
       { status: 500 }
-		)
+    );
   }
 } 

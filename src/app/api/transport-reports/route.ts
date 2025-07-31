@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSessionFromCookie } from '@/lib/auth'
+import { getSessionFromCookie, hasPermission } from '@/lib/auth'
 import { transportReportService } from '@/backend/services/transport-report.service'
 import { z } from 'zod'
 
@@ -22,6 +22,12 @@ export async function POST(request: NextRequest) {
 		const session = await getSessionFromCookie()
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to create transport reports
+		const hasWritePermission = await hasPermission(session.user_id, 'transport_reports:write')
+		if (!hasWritePermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const body = await request.json()
@@ -76,6 +82,14 @@ export async function GET(request: NextRequest) {
 		const session = await getSessionFromCookie()
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to read transport reports
+		const hasReadOwnPermission = await hasPermission(session.user_id, 'transport_reports:read_own')
+		const hasReadAllPermission = await hasPermission(session.user_id, 'transport_reports:read_all')
+		
+		if (!hasReadOwnPermission && !hasReadAllPermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const { searchParams } = new URL(request.url)

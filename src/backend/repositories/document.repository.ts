@@ -25,7 +25,7 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 			const document = await prisma.document.create({
 				data,
 				include: {
-					user: {
+					User: {
 						select: {
 							username: true
 						}
@@ -46,7 +46,7 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 		return await prisma.document.findMany({
 			where: { event_id: eventId },
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true
 					}
@@ -60,7 +60,7 @@ export class DocumentRepository implements DocumentRepositoryInterface {
 		return await prisma.document.findUnique({
 			where: { document_id: documentId },
 			include: {
-				user: {
+				User: {
 					select: {
 						username: true
 					}

@@ -43,7 +43,7 @@ export interface IEventService {
 
 // Session service interface
 export interface ISessionService {
-	createSession(userId: number): Promise<{ token: string; response: Response }>
+	createSession(userId: number): Promise<{ token: string; response: Response; permissions: string[] }>
 	validateSession(token: string): Promise<User | null>
 	deleteSession(): Promise<Response>
 } 

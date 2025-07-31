@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { container } from '@/backend/container'
-import { getSessionFromCookie } from '@/lib/auth'
+import { getSessionFromCookie, hasPermission } from '@/lib/auth'
 
 export async function GET(
 	request: NextRequest,
@@ -10,6 +10,12 @@ export async function GET(
 		const session = await getSessionFromCookie()
 		if (!session) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+		}
+
+		// Check if user has permission to read documents
+		const hasReadPermission = await hasPermission(session.user_id, 'documents:read')
+		if (!hasReadPermission) {
+			return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 })
 		}
 
 		const { eventId: eventIdStr } = await params

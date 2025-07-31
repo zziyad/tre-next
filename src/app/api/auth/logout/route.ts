@@ -1,26 +1,26 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
+import { deleteSession } from '@/lib/auth';
 
-export async function POST(request: Request) {
-	try {
-		const response = NextResponse.json({
-			success: true,
-			message: 'Logged out successfully'
-		})
+export async function POST(request: NextRequest) {
+  try {
+    const response = NextResponse.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
 
-		// Clear the session cookie
-		response.cookies.set('session_token', '', {
-			httpOnly: true,
-			path: '/',
-			sameSite: 'lax',
-			secure: process.env.NODE_ENV === 'production',
-			maxAge: 0 // This expires the cookie immediately
-		})
+    // Clear the session cookie
+    response.cookies.set('session_token', '', {
+      httpOnly: true,
+      path: '/',
+      expires: new Date(0),
+    });
 
-		return response
+    return response;
   } catch (error) {
+    console.error('Logout error:', error);
     return NextResponse.json(
-			{ success: false, error: 'Something went wrong' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
-		)
+    );
   }
 } 

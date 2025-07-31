@@ -11,7 +11,7 @@ export interface Document {
 	mime_type: string
 	uploaded_by: number
 	created_at: string
-	user: {
+	User: {
 		username: string
 	}
 }
